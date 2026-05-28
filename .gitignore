@@ -1,0 +1,58 @@
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert/
+
+# Data — don't commit real telemetry
+data/events.json
+data/inventory.csv
+data/*.db
+
+# Findings — don't commit real findings (may contain PII/sensitive data)
+findings/*.yaml
+findings/*.json
+!findings/.gitkeep
+
+# Logs
+logs/*.jsonl
+!logs/.gitkeep
+
+# Docs generated files (keep _layouts, assets, config — not generated pages)
+docs/*.md
+!docs/index.md
+docs/_data/findings_index.yaml
+
+# AWS / secrets
+.env
+*.pem
+*.key
+aws_credentials
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,9 @@
+{
+  "bucket": "my-security-telemetry",
+  "region": "us-east-1",
+  "profile_name": "default",
+  "telemetry_key": "openclaw/telemetry/events_2026-05-28.json",
+  "inventory_key": "openclaw/inventory/inventory_2026-05-28.csv",
+  "generated_at": "2026-05-28T18:00:00Z",
+  "notes": "No secrets stored here. Credentials come from ~/.aws/credentials named profile."
+}

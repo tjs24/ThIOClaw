@@ -1,0 +1,33 @@
+inventory:
+  csv_path: ./data/inventory.csv
+  refresh_interval_seconds: 60
+
+telemetry:
+  local_json_path: ./data/events.json
+  s3_manifest_path: ./data/s3_manifest.json
+  lookback_hours: 24
+  default_source: local          # overridden by --raw-telemetry flag
+
+aws:
+  profile_name: default          # Named AWS profile from ~/.aws/credentials
+  # Set to a specific profile name for non-default, e.g. "security-audit"
+
+agent:
+  openclaw_bin: ./openclaw
+  timeout_seconds: 120
+
+orchestrator:
+  run_interval_seconds: 300
+  max_concurrent_runs: 4
+
+output:
+  findings_dir: ./findings
+  docs_dir: ./docs
+  yaml: true
+  markdown: true
+
+observability:
+  log_path: ./logs/agent_runs.jsonl
+  metrics_port: 9090
+  trace_endpoint: null           # Set to OTel collector URL to enable remote export
+  service_name: openclaw-harness

@@ -1,0 +1,15 @@
+targets:
+  - cve_id: CVE-2026-31431
+    description: "Linux kernel algif_aead local privilege escalation"
+    notebook: notebooks/investigate_CVE-2026-31431.ipynb
+    signals_file: signals/CVE-2026-31431.yaml
+    priority: high
+    enabled: true
+    # Assessment values from OSQuery inventory that trigger investigation
+    trigger_assessments:
+      - vulnerable_or_not_confirmed_fixed
+      - running_kernel_pkg_not_matched
+    # Assessment values to skip entirely
+    skip_assessments:
+      - not_affected_ubuntu_26_04
+      - patched_kernel_pkg_exact_match

@@ -1,0 +1,8 @@
+workload_id,hostname,os_name,os_version,distro_family,running_kernel,pkg_mgr,kernel_pkg_version,kmod_version,algif_aead,assessment,action,collected_at
+wl_a3f9b1c2,prod-web-42,ubuntu,22.04,ubuntu,5.15.0-91-generic,deb,5.15.0-91.101,29-1ubuntu1.0,loaded,vulnerable_or_not_confirmed_fixed,"upgrade kmod, then reboot or unload algif_aead",2026-05-28T18:00:00Z
+wl_b4e7d3a1,prod-db-07,ubuntu,20.04,ubuntu,5.4.0-182-generic,deb,5.4.0-182.202,27-1ubuntu2.0,loaded,vulnerable_or_not_confirmed_fixed,"upgrade kmod, then reboot or unload algif_aead",2026-05-28T18:00:00Z
+wl_c5f2e9d4,prod-web-99,ubuntu,22.04,ubuntu,5.15.0-91-generic,deb,5.15.0-91.101,29-1ubuntu1.1,not_loaded_or_built_in_unknown,mitigated_by_kmod,"OK: Ubuntu kmod mitigation present and algif_aead not loaded",2026-05-28T18:00:00Z
+wl_d6a1b8e5,rhel-app-01,red hat enterprise linux,8.10,redhat_family,4.18.0-553.120.1.el8_10.x86_64,rpm,4.18.0-553.120.1.el8_10,not_installed_or_not_deb,loaded,vulnerable_or_not_confirmed_fixed,patch kernel or apply vendor mitigation,2026-05-28T18:00:00Z
+wl_e7c3a2f6,rhel-app-02,red hat enterprise linux,8.10,redhat_family,4.18.0-553.121.1.el8_10.x86_64,rpm,4.18.0-553.121.1.el8_10,not_installed_or_not_deb,loaded,patched_kernel_pkg_exact_match,"OK: fixed kernel package exact match running",2026-05-28T18:00:00Z
+wl_f8d4b3g7,ubuntu-26-host,ubuntu,26.04,ubuntu,6.14.0-15-generic,deb,6.14.0-15.15,34.2-2ubuntu1.0,not_loaded_or_built_in_unknown,not_affected_ubuntu_26_04,"OK: Ubuntu 26.04 Resolute not affected",2026-05-28T18:00:00Z
+wl_g9e5c4h8,debian-srv-03,debian,12,debian,6.1.0-21-amd64,deb,6.1.169-1,not_installed_or_not_deb,loaded,vulnerable_or_not_confirmed_fixed,upgrade fixed Debian security kernel and reboot,2026-05-28T18:00:00Z

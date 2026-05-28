@@ -1,0 +1,194 @@
+/* ================================================================
+   OpenClaw GitHub Pages — style.css
+   Dark-mode security dashboard aesthetic
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ---- Reset & base -------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --surface-2:    #21262d;
+  --border:       #30363d;
+  --text:         #e6edf3;
+  --text-muted:   #8b949e;
+  --accent:       #58a6ff;
+  --red:          #ff4444;
+  --orange:       #ff8c00;
+  --green:        #3fb950;
+  --gray:         #6e7681;
+
+  --font-sans:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+  --radius:       8px;
+  --shadow:       0 2px 8px rgba(0,0,0,0.4);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+/* ---- Nav ----------------------------------------------------- */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-logo  { font-weight: 700; font-size: 1.1rem; color: var(--accent); text-decoration: none; }
+.nav-subtitle { color: var(--text-muted); font-size: 0.85rem; flex: 1; }
+.nav-link  { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.nav-link:hover { text-decoration: underline; }
+
+/* ---- Container ----------------------------------------------- */
+.container {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+/* ---- Verdict banner ------------------------------------------ */
+.verdict-banner {
+  border-radius: var(--radius);
+  padding: 1rem 1.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  letter-spacing: 0.05em;
+}
+.verdict-exploited    { background: rgba(255,68,68,0.15);  border: 2px solid var(--red);    color: var(--red); }
+.verdict-suspicious   { background: rgba(255,140,0,0.12);  border: 2px solid var(--orange); color: var(--orange); }
+.verdict-benign       { background: rgba(63,185,80,0.12);  border: 2px solid var(--green);  color: var(--green); }
+.verdict-inconclusive { background: rgba(110,118,129,0.12);border: 2px solid var(--gray);   color: var(--gray); }
+
+/* ---- Summary stat cards -------------------------------------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.stat-number { font-size: 2.2rem; font-weight: 700; line-height: 1; }
+.stat-label  { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-red    .stat-number { color: var(--red); }
+.stat-orange .stat-number { color: var(--orange); }
+.stat-green  .stat-number { color: var(--green); }
+.stat-gray   .stat-number { color: var(--gray); }
+
+/* ---- Findings table ------------------------------------------ */
+.findings-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+.findings-table th {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border-bottom: 2px solid var(--border);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+.findings-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.findings-table tr:hover td { background: var(--surface-2); }
+.findings-table a { color: var(--accent); text-decoration: none; }
+.findings-table a:hover { text-decoration: underline; }
+
+/* ---- Finding article (detail page) --------------------------- */
+.finding-content h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.finding-content h2 { font-size: 1.25rem; margin: 2rem 0 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+.finding-content h3 { font-size: 1rem; margin: 1.5rem 0 0.5rem; color: var(--text-muted); }
+.finding-content p  { margin-bottom: 1rem; }
+.finding-content hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+.finding-content blockquote {
+  border-left: 3px solid var(--orange);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  background: rgba(255,140,0,0.07);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text);
+}
+
+/* ---- Tables (markdown-generated) ----------------------------- */
+.finding-content table, .findings-table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0; overflow-x: auto; display: block;
+}
+.finding-content table th {
+  background: var(--surface-2); color: var(--text-muted);
+  padding: 0.5rem 0.75rem; text-align: left;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.finding-content table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.finding-content table tr:hover td { background: var(--surface-2); }
+
+/* ---- Code ---------------------------------------------------- */
+code, kbd {
+  font-family: var(--font-mono);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.85em;
+  color: #f78166;
+}
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+pre code { background: none; border: none; padding: 0; color: var(--text); font-size: 0.85rem; }
+
+/* ---- Footer -------------------------------------------------- */
+.footer {
+  margin-top: 4rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ---- Responsive ---------------------------------------------- */
+@media (max-width: 768px) {
+  .nav { padding: 0.75rem 1rem; }
+  .container { padding: 0 1rem; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
