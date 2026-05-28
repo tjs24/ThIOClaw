@@ -51,19 +51,20 @@ python -m harness.orchestrator --raw-telemetry local
 # Single cycle, S3 telemetry (requires ~/.aws/credentials named profile)
 python -m harness.orchestrator --raw-telemetry s3 --once
 
-# Investigate a specific CVE only
+# Investigate a specific CVE (e.g., our bundled example)
 python -m harness.orchestrator --cve CVE-2026-31431 --once
 ```
 
 ### 4. Run the notebook directly (interactive mode)
 
 ```bash
+# Example using the bundled CVE-2026-31431 notebook
 jupyter lab notebooks/investigate_CVE-2026-31431.ipynb
 ```
 
 Or headlessly via papermill:
 ```bash
-papermill notebooks/investigate_CVE-2026-31431.ipynb \
+papermill notebooks/investigate_<CVE-ID>.ipynb \
   findings/executed_notebook.ipynb \
   -p raw_telemetry local \
   -p local_events_path data/events.json \
@@ -98,10 +99,10 @@ papermill notebooks/investigate_CVE-2026-31431.ipynb \
 ThIOClaw/
 ├── harness.yaml                   # Main config
 ├── targets.yaml                   # CVE investigation targets
-├── signals/CVE-2026-31431.yaml    # Signal rules + weights
-├── queries/CVE-2026-31431/        # Reference OSQuery SQL files (Q1–Q6)
+├── signals/<CVE-ID>.yaml          # Signal rules + weights (e.g. CVE-2026-31431)
+├── queries/<CVE-ID>/              # Reference OSQuery SQL files
 ├── notebooks/
-│   └── investigate_CVE-2026-31431.ipynb  # Investigation notebook
+│   └── investigate_<CVE-ID>.ipynb # Investigation notebook
 ├── data/
 │   ├── sample_inventory.csv       # Sample data (replace with real)
 │   ├── sample_events.json         # Sample telemetry (replace with real)
@@ -116,7 +117,9 @@ ThIOClaw/
 
 ---
 
-## CVE-2026-31431 — Investigation Queries
+## Example: CVE-2026-31431
+
+ThIOClaw comes with a bundled example for **CVE-2026-31431** to demonstrate the harness's capabilities. The queries used in this example are:
 
 | Query | Signal | Tier |
 |---|---|---|
@@ -154,9 +157,11 @@ Push `docs/` to your `main` branch and enable GitHub Pages in the repo settings 
 
 ---
 
-## Adding a New CVE
+## Investigating Any Vulnerability
 
-1. Add an entry to `targets.yaml`
-2. Create `signals/<CVE-ID>.yaml`
-3. Add SQL queries to `queries/<CVE-ID>/`
-4. Duplicate and adapt `notebooks/investigate_CVE-2026-31431.ipynb`
+ThIOClaw is designed to be highly generic. You can investigate **any** vulnerability by supplying the necessary signals, queries, and notebook:
+
+1. **Define Target**: Add an entry to `targets.yaml` with the CVE-ID and basic metadata.
+2. **Configure Signals**: Create `signals/<CVE-ID>.yaml` defining the conditions and weights for exploitation.
+3. **Build Queries**: Add relevant OSQuery SQL files to `queries/<CVE-ID>/` to extract telemetry.
+4. **Create Notebook**: Duplicate `notebooks/investigate_CVE-2026-31431.ipynb`, rename it to `investigate_<CVE-ID>.ipynb`, and adapt the analysis logic to match the new vulnerability's signature.
