@@ -13,7 +13,7 @@ aws:
   # Set to a specific profile name for non-default, e.g. "security-audit"
 
 agent:
-  openclaw_bin: ./openclaw
+  openclaw_bin: ./scripts/openclaw.py
   timeout_seconds: 120
 
 orchestrator:

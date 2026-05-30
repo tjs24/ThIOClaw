@@ -17,29 +17,32 @@ events.json (local/S3)  ──► Notebook  ──► Q2–Q6 pandas analysis
                                        ──► docs/*.md (GitHub Pages)
 ```
 
-## Quick Start
+## macOS Setup & Quick Start
 
-### 1. Install dependencies
+To evaluate OpenClaw locally on macOS, you can use the bundled agent scripts.
+
+### 1. Setup the Environment
+
+Create your virtual environment and install dependencies:
 
 ```bash
 cd ThIOClaw
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Add your data
+### 2. Configure API Keys
 
-Copy your OSQuery inventory CSV:
+The OpenClaw agent requires an LLM for its control plane. Create an `.env` file in the root directory:
+
 ```bash
-cp /path/to/osquery_results.csv data/inventory.csv
+echo 'OPENAI_API_KEY="your-key-here"' > .env
 ```
 
-Copy your telemetry JSON (or configure S3 — see below):
-```bash
-cp /path/to/events.json data/events.json
-```
+### 3. Run the Evaluation Harness
 
-### 3. Run the harness
+You can now run the orchestrator, which will automatically invoke the local `scripts/openclaw.py` agent to investigate the vulnerabilities!
 
 ```bash
 # Single cycle, local telemetry
@@ -47,9 +50,6 @@ python -m harness.orchestrator --raw-telemetry local --once
 
 # Continuous loop, local telemetry
 python -m harness.orchestrator --raw-telemetry local
-
-# Single cycle, S3 telemetry (requires ~/.aws/credentials named profile)
-python -m harness.orchestrator --raw-telemetry s3 --once
 
 # Investigate a specific CVE (e.g., our bundled example)
 python -m harness.orchestrator --cve CVE-2026-31431 --once
