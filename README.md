@@ -24,35 +24,6 @@ ThIOClaw is built on five engineering principles:
 
 ---
 
-## Architecture
-
-```mermaid
-graph TD
-    A["inventory.csv (OSQuery)"] -->|Ingester| B["inventory.db (SQLite)"]
-    C["events.json (local/S3)"] -->|Data Plane| D["data_plane/cve_2026_31431.py"]
-    B -->|vulnerable workloads| D
-    D -->|"pandas Q1-Q6"| E["Tier 1: Deterministic Signal Scoring"]
-    E -->|tier1.json| F["Tier 2: OpenClaw LLM Agent"]
-    F <-->|"HITL Approval Gates"| G(("Analyst Terminal"))
-    F --> H["findings/*.yaml"]
-    F --> I["docs/*.md + *.html"]
-    H --> J["findings/findings.jsonl"]
-    J -->|docs_builder| K["docs/index.md (GitHub Pages)"]
-
-    style E fill:#ff8c00,color:#fff
-    style F fill:#4488ff,color:#fff
-    style G fill:#22aa44,color:#fff
-```
-
-### How It Works
-
-1. **Ingest** — OSQuery-derived `inventory.csv` is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
-2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic pandas queries (Q1–Q6) against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
-3. **Tier 2 (Control Plane)** — The OpenClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
-4. **Output** — Findings are persisted as YAML, Markdown, and HTML. An append-only JSONL log feeds the GitHub Pages dashboard. All events are instrumented with OpenTelemetry.
-
----
-
 ## macOS Setup & Quick Start
 
 ### 1. Setup the Environment
@@ -176,6 +147,34 @@ ThIOClaw/
 
 ---
 
+## Architecture
+
+```mermaid
+graph TD
+    A["inventory.csv (OSQuery)"] -->|Ingester| B["inventory.db (SQLite)"]
+    C["events.json (local/S3)"] -->|Data Plane| D["data_plane/cve_2026_31431.py"]
+    B -->|vulnerable workloads| D
+    D -->|"pandas Q1-Q6"| E["Tier 1: Deterministic Signal Scoring"]
+    E -->|tier1.json| F["Tier 2: OpenClaw LLM Agent"]
+    F <-->|"HITL Approval Gates"| G(("Analyst Terminal"))
+    F --> H["findings/*.yaml"]
+    F --> I["docs/*.md + *.html"]
+    H --> J["findings/findings.jsonl"]
+    J -->|docs_builder| K["docs/index.md (GitHub Pages)"]
+
+    style E fill:#ff8c00,color:#fff
+    style F fill:#4488ff,color:#fff
+    style G fill:#22aa44,color:#fff
+```
+
+### How It Works
+
+1. **Ingest** — OSQuery-derived `inventory.csv` is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
+2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic pandas queries (Q1–Q6) against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
+3. **Tier 2 (Control Plane)** — The OpenClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
+4. **Output** — Findings are persisted as YAML, Markdown, and HTML. An append-only JSONL log feeds the GitHub Pages dashboard. All events are instrumented with OpenTelemetry.
+
+---
 ## Bundled Example: CVE-2026-31431
 
 ThIOClaw ships with a complete investigation for **CVE-2026-31431** (Linux kernel `algif_aead` local privilege escalation) including sample telemetry that simulates a full exploit chain.
