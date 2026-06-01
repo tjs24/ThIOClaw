@@ -145,15 +145,19 @@ def run_investigation(
         except json.JSONDecodeError: pass
 
     # Reports
+    signals_bullet_list = "\n".join([f"- **{k}** (Weight: {signals[k]['weight']}, Tier: {signals[k]['tier']})" for k in signals_fired]) if signals_fired else "- None"
     md_content = f"""# {cve_id} Investigation Report
 **Verdict:** {tier1_verdict}
 
 **Total Weight:** {total_weight}
 
-**OpenClaw Reasoning:**
+## Deterministic Signals Fired
+{signals_bullet_list}
+
+## OpenClaw Agent Reasoning
 {openclaw_finding.get('reasoning_trace', 'N/A')}
 
-**Action:**
+## Recommended Action
 > {openclaw_finding.get('recommended_action', 'N/A')}
 """
     docs_dir = pathlib.Path("docs")

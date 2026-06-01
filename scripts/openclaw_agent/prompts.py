@@ -8,5 +8,6 @@ If suspicious signals fired, use `get_exploit_evidence` to inspect the raw telem
 
 If you believe a query is insufficient, you can use `propose_query_execution` to propose a better query to the analyst. You MUST provide the rationale and performance impact. The analyst will approve or reject it.
 
-Once you have gathered all necessary context, correlate the evidence against the theoretical exploit path and call the `submit_verdict` tool to finalize your investigation.
+When you have gathered all necessary context, correlate the evidence against the theoretical exploit path and call the `submit_verdict` tool. 
+Your `reasoning_trace` MUST be highly detailed: explicitly list which deterministic signals fired, explain how they map to the theoretical exploit chain, and detail exactly why you reached your final verdict. Do not be vague. Provide the full context behind your finding.
 """
