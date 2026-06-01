@@ -208,6 +208,7 @@ def main() -> None:
     structured_log = get_structured_logger(cfg.observability.log_path)
     metrics = HarnessMetrics(port=cfg.observability.metrics_port)
     ingester = InventoryIngester(csv_path=cfg.inventory.csv_path)
+    ingester.ingest()
 
     logger.info(
         "OpenClaw Harness starting | telemetry=%s interval=%ds",
