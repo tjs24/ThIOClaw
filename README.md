@@ -18,7 +18,7 @@ ThIOClaw is built on five engineering principles:
 | **Repeatability** | Tier 1 signal scoring is **deterministic** pandas math — same input, same output, every time. The LLM reasons *on top of* reproducible foundations. |
 | **Configurability** | Signal rules, weights, verdict thresholds, and exploit chain descriptions are YAML files. The agent's prompt and tools are Python source code. No hidden dashboards. |
 | **Version Control** | Detection logic, agent behavior, and signal rules all live in Git. Changes produce clean diffs. Review, approve, and roll back with standard engineering workflows. |
-| **Evaluability** | Run the same investigation with different models, prompts, or tool configs. Compare Tier 1 baselines against Tier 2 LLM verdicts. Prometheus metrics track agent performance over time. |
+| **Measurability** | Run the same investigation with different models, prompts, or tool configs. Compare Tier 1 baselines against Tier 2 LLM verdicts. Prometheus metrics track agent performance over time. |
 
 **This project is for security teams who want engineering control and observability into their journey into LLM-powered SecOps.**
 
