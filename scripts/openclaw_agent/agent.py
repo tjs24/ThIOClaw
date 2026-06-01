@@ -2,7 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from openai import OpenAI
+import litellm
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 try:
@@ -23,28 +23,27 @@ from openclaw_agent.tools import AVAILABLE_TOOLS, get_tier1_summary, get_cve_the
 class OpenClawAgent:
     def __init__(self):
         self.tracer = get_tracer()
-        self.client = OpenAI(
-            base_url="http://localhost:11434/v1",
-            api_key="ollama" # required but unused by Ollama
-        )
         
+
     def run_investigation(self, cve_id: str, workload_id: str, tier1_path: str, signals_path: str, telemetry_source: str) -> dict:
         with self.tracer.start_as_current_span("openclaw.agent.investigate") as span:
             span.set_attribute("cve_id", cve_id)
             span.set_attribute("workload_id", workload_id)
             
-            model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+            model = os.getenv("OPENCLAW_MODEL", "ollama/llama3.1:8b")
+            base_url = os.getenv("OPENCLAW_BASE_URL", "http://localhost:11434")
             span.set_attribute("llm_model", model)
             
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             
             # Start the LLM Loop
             for i in range(15): # Max 15 turns
-                response = self.client.chat.completions.create(
+                response = litellm.completion(
                     model=model,
                     messages=messages,
                     tools=AVAILABLE_TOOLS,
-                    tool_choice="auto"
+                    tool_choice="auto",
+                    base_url=base_url if "ollama" in model.lower() or "v1" in base_url else None
                 )
                 
                 message = response.choices[0].message

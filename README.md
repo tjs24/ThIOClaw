@@ -36,19 +36,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Ollama (Local LLM)
+### 2. Configure the LLM (Local or Cloud)
 
-The agent uses a **local Ollama instance** for private, on-device inference — your telemetry never leaves your machine.
+ThIOClaw uses [LiteLLM](https://github.com/BerriAI/litellm) for its control plane, meaning you can plug in **any** LLM provider (Ollama, Anthropic, OpenAI, AWS Bedrock, etc.) without changing code.
 
+#### Option A: Local (Ollama)
+For complete privacy, run the LLM locally on your Mac:
 ```bash
-# Install: https://ollama.com
-ollama serve                    # Start the server (separate terminal)
-ollama pull llama3.1:8b         # Pull the default model (~16GB unified memory)
+ollama serve                    # Start the server
+ollama pull llama3.1:8b         # Pull the default model
 ```
 
-Swap models at any time via environment variable:
+#### Option B: Cloud (Anthropic / OpenAI)
+Export your provider's API key and set the model via `OPENCLAW_MODEL`:
+
 ```bash
-export OLLAMA_MODEL="qwen2.5:7b"
+# Anthropic Claude 3.5 Sonnet
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENCLAW_MODEL="claude-3-5-sonnet-20241022"
+
+# OpenAI GPT-4o
+export OPENAI_API_KEY="sk-proj-..."
+export OPENCLAW_MODEL="gpt-4o"
 ```
 
 ### 3. Run an Investigation

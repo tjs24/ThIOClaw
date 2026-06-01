@@ -195,7 +195,8 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OLLAMA_MODEL` | `llama3.1:8b` | Which Ollama model the agent uses |
+| `OPENCLAW_MODEL` | `ollama/llama3.1:8b` | Which LLM the agent uses |
+| `OPENCLAW_BASE_URL` | `http://localhost:11434` | The API endpoint for the LLM |
 
 ---
 
@@ -223,8 +224,8 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 ### Why modular Python scripts instead of Jupyter notebooks?
 The data plane was originally implemented as Jupyter notebooks executed via Papermill. We migrated to pure Python scripts because: (1) clean git diffs for version-controlled detection logic, (2) standard `pytest` unit testing of individual query functions, (3) dramatically faster execution without kernel startup overhead, and (4) deployment flexibility (Docker, Lambda, stream processors).
 
-### Why Ollama instead of cloud LLMs?
-Threat hunting telemetry is sensitive. Running inference locally via Ollama ensures that raw telemetry, exploit evidence, and investigation context never leave the analyst's machine. The `OLLAMA_MODEL` env var makes it trivial to swap models for evaluation.
+### Why LiteLLM instead of raw SDKs?
+The control plane uses the LiteLLM library because it provides a single, unified interface to 100+ LLM providers. Instead of writing separate code paths for Anthropic, OpenAI, and Ollama, we write one tool-calling loop. Teams can default to Ollama for complete privacy (telemetry never leaves the host), but easily swap to Claude 3.5 Sonnet or GPT-4o via the `OPENCLAW_MODEL` environment variable.
 
 ### Why separate Tier 1 and Tier 2?
 Deterministic signal scoring (Tier 1) provides a reproducible, auditable baseline that works even if the LLM is unavailable or produces nonsense. The LLM (Tier 2) adds reasoning depth but cannot override the math. This layered architecture lets teams measure what the LLM actually contributes versus deterministic rules alone.
@@ -250,7 +251,12 @@ Edit `signals/<CVE-ID>.yaml`. Weights and verdict thresholds are defined there a
 
 ### Swapping the LLM model
 ```bash
-export OLLAMA_MODEL="qwen2.5:7b"  # or any Ollama-compatible model
+# Local Ollama
+export OPENCLAW_MODEL="ollama/qwen2.5:7b"
+
+# Anthropic
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENCLAW_MODEL="claude-3-5-sonnet-20241022"
 ```
 
 ---
