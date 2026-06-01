@@ -65,7 +65,7 @@ class ObservabilityConfig:
 class CVETarget:
     cve_id: str
     description: str
-    notebook: str
+    script: str
     signals_file: str
     priority: str = "high"
     enabled: bool = True

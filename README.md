@@ -8,13 +8,15 @@
 
 ## Architecture
 
-```
-inventory.csv (OSQuery) ──► Ingester ──► inventory.db (SQLite)
-events.json (local/S3)  ──► Notebook  ──► Q2–Q6 pandas analysis
-                                       ──► Tier 1 signal scoring
-                                       ──► ./openclaw investigate (Tier 2 LLM)
-                                       ──► findings/*.yaml
-                                       ──► docs/*.md (GitHub Pages)
+```mermaid
+graph TD
+    A[inventory.csv OSQuery] -->|Ingester| B(inventory.db SQLite)
+    C[events.json local/S3] -->|Data Plane Script| D{data_plane/cve_2026_31431.py}
+    D -->|pandas analysis| E(Tier 1 Signal Scoring)
+    E -->|tier1.json| F[OpenClaw Agent LLM Control Plane]
+    F <-->|HITL Query Approvals| G((Analyst terminal))
+    F --> H[findings/*.yaml]
+    F --> I[docs/*.md & *.html GitHub Pages]
 ```
 
 ## macOS Setup & Quick Start
@@ -32,17 +34,26 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure API Keys
+### 2. Configure API Keys & Ollama
 
-The OpenClaw agent requires an LLM for its control plane. Create an `.env` file in the root directory:
+The OpenClaw agent uses an LLM for its control plane. By default, it expects a local **Ollama** instance to be running for private, free, on-device inference.
 
-```bash
-echo 'OPENAI_API_KEY="your-key-here"' > .env
-```
+1. [Download Ollama](https://ollama.com) and install it on your Mac.
+2. Start the server and pull the recommended model (requires ~16GB Unified Memory):
+   ```bash
+   ollama serve
+   ollama pull llama3.1:8b
+   ```
+3. *(Optional)* To test different models, you can set the environment variable:
+   ```bash
+   export OLLAMA_MODEL="qwen2.5:7b"
+   ```
 
 ### 3. Run the Evaluation Harness
 
-You can now run the orchestrator, which will automatically invoke the local `scripts/openclaw.py` agent to investigate the vulnerabilities!
+You can now run the orchestrator. The modular Python Data Plane will run deterministic pandas queries, score Tier-1 signals, and then invoke the local `scripts/openclaw.py` agent. 
+
+**Human-In-The-Loop (HITL):** During execution, the agent may use its `propose_query_execution` tool if it feels the evidence is lacking. You will be prompted in the terminal to review its rationale, performance impact, and approve the execution!
 
 ```bash
 # Single cycle, local telemetry
@@ -51,24 +62,8 @@ python -m harness.orchestrator --raw-telemetry local --once
 # Continuous loop, local telemetry
 python -m harness.orchestrator --raw-telemetry local
 
-# Investigate a specific CVE (e.g., our bundled example)
+# Investigate a specific CVE
 python -m harness.orchestrator --cve CVE-2026-31431 --once
-```
-
-### 4. Run the notebook directly (interactive mode)
-
-```bash
-# Example using the bundled CVE-2026-31431 notebook
-jupyter lab notebooks/investigate_CVE-2026-31431.ipynb
-```
-
-Or headlessly via papermill:
-```bash
-papermill notebooks/investigate_<CVE-ID>.ipynb \
-  findings/executed_notebook.ipynb \
-  -p raw_telemetry local \
-  -p local_events_path data/events.json \
-  -p local_inventory_path data/inventory.csv
 ```
 
 ---
@@ -101,8 +96,8 @@ ThIOClaw/
 ├── targets.yaml                   # CVE investigation targets
 ├── signals/<CVE-ID>.yaml          # Signal rules + weights (e.g. CVE-2026-31431)
 ├── queries/<CVE-ID>/              # Reference OSQuery SQL files
-├── notebooks/
-│   └── investigate_<CVE-ID>.ipynb # Investigation notebook
+├── data_plane/
+│   └── cve_2026_31431.py          # Modular Python Data Plane execution script
 ├── data/
 │   ├── sample_inventory.csv       # Sample data (replace with real)
 │   ├── sample_events.json         # Sample telemetry (replace with real)
@@ -110,7 +105,7 @@ ThIOClaw/
 ├── harness/                       # Python orchestrator modules
 ├── observability/                 # OTel metrics, traces, structured logging
 ├── findings/                      # Output YAML findings (gitignored)
-├── docs/                          # GitHub Pages output
+├── docs/                          # GitHub Pages HTML/MD output
 ├── logs/                          # Structured JSONL logs (gitignored)
 └── tests/                         # Unit tests
 ```
@@ -132,36 +127,10 @@ ThIOClaw comes with a bundled example for **CVE-2026-31431** to demonstrate the 
 
 ---
 
-## Observability
-
-| Feature | Detail |
-|---|---|
-| Structured logs | `logs/agent_runs.jsonl` — one JSON line per event |
-| Metrics | Prometheus at `http://localhost:9090/metrics` |
-| Traces | OTel (stdout by default, configurable to OTLP endpoint) |
-
----
-
-## Running Tests
-
-```bash
-pytest tests/ -v
-pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
-```
-
----
-
-## GitHub Pages
-
-Push `docs/` to your `main` branch and enable GitHub Pages in the repo settings (source: `docs/` folder). Findings will be published to `https://tej-nik.github.io/ThIOClaw`.
-
----
-
 ## Investigating Any Vulnerability
 
-ThIOClaw is designed to be highly generic. You can investigate **any** vulnerability by supplying the necessary signals, queries, and notebook:
+ThIOClaw is designed to be highly generic. You can investigate **any** vulnerability by supplying the necessary signals, queries, and data plane script:
 
-1. **Define Target**: Add an entry to `targets.yaml` with the CVE-ID and basic metadata.
-2. **Configure Signals**: Create `signals/<CVE-ID>.yaml` defining the conditions and weights for exploitation.
-3. **Build Queries**: Add relevant OSQuery SQL files to `queries/<CVE-ID>/` to extract telemetry.
-4. **Create Notebook**: Duplicate `notebooks/investigate_CVE-2026-31431.ipynb`, rename it to `investigate_<CVE-ID>.ipynb`, and adapt the analysis logic to match the new vulnerability's signature.
+1. **Define Target**: Add an entry to `targets.yaml` with the CVE-ID.
+2. **Configure Signals**: Create `signals/<CVE-ID>.yaml` defining the conditions and weights.
+3. **Build Data Plane**: Duplicate `data_plane/cve_2026_31431.py`, rename it, and adapt the pandas analysis logic for the new vulnerability.

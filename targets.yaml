@@ -1,7 +1,7 @@
 targets:
   - cve_id: CVE-2026-31431
     description: "Linux kernel algif_aead local privilege escalation"
-    notebook: notebooks/investigate_CVE-2026-31431.ipynb
+    script: data_plane.cve_2026_31431
     signals_file: signals/CVE-2026-31431.yaml
     priority: high
     enabled: true

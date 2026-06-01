@@ -25,7 +25,6 @@ from typing import Optional
 from harness.config import HarnessConfig, CVETarget, load_config, resolve_telemetry_source
 from harness.docs_builder import build_index
 from harness.ingester import InventoryIngester
-from harness.notebook_runner import run_investigation
 from observability.logger import get_structured_logger
 from observability.metrics import HarnessMetrics
 
@@ -72,10 +71,15 @@ def investigate_target(
         logger.info("No vulnerable workloads found for %s. Skipping.", target.cve_id)
         return
 
-    # 2. Dispatch notebook per workload (or ALL at once if notebook handles grouping)
-    # For this prototype we run one notebook pass covering ALL matched workloads.
-    result = run_investigation(
-        notebook_path=target.notebook,
+    # 2. Dispatch Python script
+    import importlib
+    try:
+        dp = importlib.import_module(target.script)
+    except ModuleNotFoundError:
+        logger.error("Data plane script %s not found.", target.script)
+        return
+
+    result = dp.run_investigation(
         cve_id=target.cve_id,
         workload_id="ALL",
         raw_telemetry=raw_telemetry,
