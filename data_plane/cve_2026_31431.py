@@ -63,17 +63,47 @@ def run_investigation(
         q3 = events_df[(events_df.get("socket_family") == 38) & (events_df.get("uid") != 0) & (events_df.get("euid") == 0)]
         q3_signal = len(q3) > 0
 
+    # Q4: Root Shell from Unprivileged Parent
+    q4_signal = False
+    SHELL_NAMES = frozenset(["bash", "sh", "dash", "su", "sudo", "id", "whoami", "passwd", "useradd", "newgrp"])
+    if not events_df.empty and "event_type" in events_df.columns:
+        proc_events = events_df[events_df["event_type"] == "process"].copy()
+        if not proc_events.empty and "process_name" in proc_events.columns:
+            root_shells = proc_events[
+                (proc_events["process_name"].isin(SHELL_NAMES)) &
+                (proc_events.get("euid", pd.Series(dtype=float)) == 0)
+            ].copy()
+            if not root_shells.empty and "ppid" in root_shells.columns and "pid" in proc_events.columns:
+                parent_map = proc_events.set_index("pid")[["uid"]].rename(columns={"uid": "parent_uid"})
+                q4 = root_shells.join(parent_map, on="ppid", how="left")
+                q4 = q4[q4["parent_uid"].notna() & (q4["parent_uid"] != 0)]
+                q4_signal = len(q4) > 0
+
     # Q5: Module Load
     q5_signal = False
     if not events_df.empty:
         q5 = events_df[(events_df.get("event_type") == "kernel_module") & (events_df.get("module_name") == "algif_aead")]
         q5_signal = len(q5) > 0
 
+    # Q6: Exploit Staging Artifacts
+    q6_signal = False
+    STAGING_PREFIXES = ("/tmp/", "/dev/shm/", "/proc/")
+    if not events_df.empty and "event_type" in events_df.columns:
+        file_events = events_df[events_df["event_type"] == "file"].copy()
+        if not file_events.empty and "file_path" in file_events.columns:
+            q6 = file_events[
+                file_events["file_path"].str.startswith(STAGING_PREFIXES, na=False) |
+                file_events.get("cmdline", pd.Series(dtype=str)).str.contains("memfd", na=False)
+            ]
+            q6_signal = len(q6) > 0
+
     signals = {
         "ALGIF_LOADED": {"fired": algif_loaded_signal, "weight": 0.3, "tier": "suspicious", "q": "Q1"},
         "AF_ALG_SOCKET_OPEN_UNPRIV": {"fired": q2_signal, "weight": 0.5, "tier": "suspicious", "q": "Q2"},
         "UID_ESCALATION_AFTER_AFALG": {"fired": q3_signal, "weight": 1.0, "tier": "exploited", "q": "Q3"},
-        "MODULE_LOAD_EVENT": {"fired": q5_signal, "weight": 0.4, "tier": "suspicious", "q": "Q5"}
+        "ROOT_SHELL_FROM_UNPRIV_PARENT": {"fired": q4_signal, "weight": 0.9, "tier": "exploited", "q": "Q4"},
+        "MODULE_LOAD_EVENT": {"fired": q5_signal, "weight": 0.4, "tier": "suspicious", "q": "Q5"},
+        "EXPLOIT_STAGING_ARTIFACTS": {"fired": q6_signal, "weight": 0.6, "tier": "suspicious", "q": "Q6"},
     }
 
     total_weight = sum(v["weight"] for v in signals.values() if v["fired"])
