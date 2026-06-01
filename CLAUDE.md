@@ -33,9 +33,9 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
                ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │                    DATA PLANE (data_plane/)                           │
-│  cve_2026_31431.py                                                   │
-│  ├── Load telemetry (events.json or S3)                              │
-│  ├── Pandas signal scoring (Q1–Q6)                                   │
+│  <cve_id>.py                                                         │
+│  ├── Load telemetry (Local/S3/API)                                   │
+│  ├── Deterministic signal scoring (e.g. Pandas)                      │
 │  ├── Tier 1 deterministic verdict                                    │
 │  ├── Write tier1.json                                                │
 │  └── Invoke OpenClaw agent (subprocess)                              │
@@ -73,7 +73,7 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
 ## Key Concepts
 
 ### Tier 1: Deterministic Signal Scoring
-The Data Plane runs pandas queries (Q1–Q6) against raw telemetry and scores them using weighted rules defined in `signals/<CVE-ID>.yaml`. This produces a **deterministic** verdict that is reproducible and auditable. No LLM is involved.
+The Data Plane runs deterministic queries against raw telemetry and scores them using weighted rules defined in `signals/<CVE-ID>.yaml`. This produces a **deterministic** verdict that is reproducible and auditable. No LLM is involved.
 
 ### Tier 2: LLM Agentic Reasoning
 The Control Plane (OpenClaw agent) receives the Tier 1 results and uses an LLM (via Ollama) to perform deeper reasoning. It can request additional evidence, correlate signals against the theoretical exploit chain, and propose new queries — but it must go through the analyst for approval.
@@ -101,7 +101,7 @@ ThIOClaw/
 │   └── finding_store.py               #   YAML + Markdown + JSONL persistence
 │
 ├── data_plane/                        # Modular Data Plane scripts
-│   └── cve_2026_31431.py              #   CVE-2026-31431 investigation logic
+│   └── <cve_id>.py                    #   CVE-specific investigation logic
 │
 ├── scripts/                           # LLM Control Plane
 │   ├── openclaw.py                    #   CLI wrapper for the agent
@@ -113,14 +113,8 @@ ThIOClaw/
 ├── signals/                           # Signal rule definitions (YAML)
 │   └── CVE-2026-31431.yaml            #   Rules, weights, exploit chain context
 │
-├── queries/                           # Reference OSQuery SQL
-│   └── CVE-2026-31431/
-│       ├── Q1_algif_loaded.sql
-│       ├── Q2_af_alg_socket_open.sql
-│       ├── Q3_uid_escalation.sql
-│       ├── Q4_root_shell_from_unpriv.sql
-│       ├── Q5_module_load_events.sql
-│       └── Q6_exploit_staging.sql
+├── queries/                           # Reference Detection Queries (e.g., SQL, KQL)
+│   └── CVE-2026-31431/               #   Example query files
 │
 ├── observability/                     # OpenTelemetry + structured logging
 │   ├── logger.py                      #   Thread-safe JSONL structured logger
@@ -162,9 +156,9 @@ ThIOClaw/
 
 2. **Create signal rules** at `signals/CVE-YYYY-NNNNN.yaml` with weighted rules and an `openclaw_context` block describing the exploit chain for the LLM.
 
-3. **Write the data plane script** at `data_plane/cve_yyyy_nnnnn.py`. It must export a `run_investigation()` function matching the signature in `cve_2026_31431.py`. Implement pandas queries specific to the vulnerability's telemetry fingerprint.
+3. **Write the data plane script** at `data_plane/<cve_id>.py`. It must export a `run_investigation()` function matching the standard signature. Implement queries (e.g. pandas) specific to the vulnerability's telemetry fingerprint.
 
-4. **Add reference OSQuery SQL** to `queries/CVE-YYYY-NNNNN/` for documentation and HITL query proposals.
+4. **Add reference queries** to `queries/<CVE-ID>/` for documentation and HITL query proposals.
 
 ---
 

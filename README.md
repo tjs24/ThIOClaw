@@ -128,8 +128,8 @@ ThIOClaw/
 ├── signals/                           # Signal rule definitions (YAML)
 │   └── CVE-2026-31431.yaml            #   Rules, weights, verdict logic, LLM context
 │
-├── queries/                           # Reference OSQuery SQL
-│   └── CVE-2026-31431/               #   Q1–Q6 SQL files
+├── queries/                           # Reference Detection Queries (e.g., SQL, KQL)
+│   └── CVE-2026-31431/               #   Example query files
 │
 ├── harness/                           # Orchestrator engine
 │   ├── orchestrator.py                #   CLI + run loop + concurrent dispatch
@@ -160,10 +160,10 @@ ThIOClaw/
 
 ```mermaid
 graph TD
-    A["inventory.csv (OSQuery)"] -->|Ingester| B["inventory.db (SQLite)"]
-    C["events.json (local/S3)"] -->|Data Plane| D["data_plane/cve_2026_31431.py"]
+    A["Inventory Telemetry (e.g. OSQuery/EDR)"] -->|Ingester| B["inventory.db (SQLite)"]
+    C["Event Telemetry (Local/S3/API)"] -->|Data Plane| D["data_plane/<cve_id>.py"]
     B -->|vulnerable workloads| D
-    D -->|"pandas Q1-Q6"| E["Tier 1: Deterministic Signal Scoring"]
+    D -->|"Deterministic queries (e.g. pandas)"| E["Tier 1: Deterministic Signal Scoring"]
     E -->|tier1.json| F["Tier 2: OpenClaw LLM Agent"]
     F <-->|"HITL Approval Gates"| G(("Analyst Terminal"))
     F --> H["findings/*.yaml"]
@@ -178,8 +178,8 @@ graph TD
 
 ### How It Works
 
-1. **Ingest** — OSQuery-derived `inventory.csv` is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
-2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic pandas queries (Q1–Q6) against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
+1. **Ingest** — Host inventory telemetry is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
+2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic queries against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
 3. **Tier 2 (Control Plane)** — The OpenClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
 4. **Output** — Findings are persisted as YAML, Markdown, and HTML. An append-only JSONL log feeds the GitHub Pages dashboard. All events are instrumented with OpenTelemetry.
 
