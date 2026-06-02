@@ -1,40 +1,56 @@
-# Data Plane Reporting
+# ============================================================================
+# Active dependencies — imported by the current code paths.
+# ============================================================================
+
+# Data plane reporting
 markdown>=3.4.0
 
 # Data manipulation
 pandas>=2.1.0
 numpy>=1.26.0
 
-# AWS S3
+# AWS S3 (telemetry source) + Bedrock (LiteLLM auth)
 boto3>=1.34.0
 botocore>=1.34.0
 
-# YAML
+# YAML (config + signal rules + finding output)
 PyYAML>=6.0.0
 
-# SQLite (stdlib) — no extra package needed
-
-# OpenTelemetry — metrics + traces
+# Observability — metrics + traces
 opentelemetry-api>=1.24.0
 opentelemetry-sdk>=1.24.0
 opentelemetry-exporter-prometheus>=0.45b0
-opentelemetry-exporter-otlp>=1.24.0
+opentelemetry-exporter-otlp>=1.24.0     # conditionally loaded in observability/traces.py
 prometheus-client>=0.20.0
 
-# HTTP / dashboard
-fastapi>=0.110.0
-uvicorn>=0.29.0
-jinja2>=3.1.0
-
-# Scheduling
-schedule>=1.2.0
+# LLM control plane
+litellm>=1.35.0
 
 # Testing
 pytest>=8.0.0
 pytest-cov>=5.0.0
-moto[s3]>=5.0.0       # S3 mocking for tests
 
-# Utilities
-python-dotenv>=1.0.0
-tabulate>=0.9.0        # markdown table output in notebook
-litellm>=1.35.0
+# ============================================================================
+# Future / optional — commented out to keep .venv lean.
+# Uncomment when the corresponding code path is wired up.
+# ============================================================================
+
+# HTTP / dashboard server (for a future local UI on top of findings)
+# fastapi>=0.110.0
+# uvicorn>=0.29.0
+
+# Templating (for richer report formats beyond raw markdown)
+# jinja2>=3.1.0
+
+# Cron-style scheduling (orchestrator currently uses time.sleep)
+# schedule>=1.2.0
+
+# S3 mocking for tests (only needed when testing the --raw-telemetry s3 path)
+# moto[s3]>=5.0.0
+
+# Markdown table generation (used by the deprecated notebook output path)
+# tabulate>=0.9.0
+
+# .env file loading (currently not used; .env.example documents env vars
+# but ThIOClaw reads them from the parent process's environment)
+# python-dotenv>=1.0.0

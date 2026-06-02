@@ -55,7 +55,28 @@ class OpenClawAgent:
                     tool_choice="auto",
                     **base_completion_kwargs,
                 )
-                
+
+                # --- Per-turn token/cost accounting (commented; fallback path) ----
+                # When PurpleClaw runs through the llm-gateway, accounting comes from
+                # the gateway's /v1/usage endpoint (single source of truth, all turns).
+                # Without the gateway (direct provider mode), capture per-turn usage
+                # here. `response.usage` is an attribute on the LiteLLM response object,
+                # not a function call. Uncomment to enable:
+                #
+                # usage = getattr(response, "usage", None)
+                # if usage:
+                #     span.set_attribute("turn.prompt_tokens", usage.prompt_tokens)
+                #     span.set_attribute("turn.completion_tokens", usage.completion_tokens)
+                #     span.set_attribute("turn.total_tokens", usage.total_tokens)
+                # try:
+                #     # litellm.completion_cost() returns USD as a float; needs the
+                #     # full response object so it can read response._hidden_params.
+                #     cost_usd = litellm.completion_cost(completion_response=response)
+                #     span.set_attribute("turn.cost_usd", cost_usd)
+                # except Exception:
+                #     pass
+                # ------------------------------------------------------------------
+
                 message = response.choices[0].message
                 if message.tool_calls:
                     messages.append(message) # Append assistant's tool call
