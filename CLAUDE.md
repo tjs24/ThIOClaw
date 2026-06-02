@@ -61,7 +61,6 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
 │  ├── findings/{run_id}_finding.yaml    (machine-readable)            │
 │  ├── findings/{run_id}_tier1.json      (deterministic signals)       │
 │  ├── docs/{CVE}_{run_id}.md + .html    (human-readable reports)      │
-│  ├── findings/findings.jsonl           (append-only log)             │
 │  ├── logs/agent_runs.jsonl             (structured event log)        │
 │  ├── Prometheus metrics (:9090)        (operational dashboards)      │
 │  └── OpenTelemetry traces              (distributed tracing)         │
@@ -96,9 +95,7 @@ ThIOClaw/
 ├── harness/                           # Orchestrator (entry point)
 │   ├── orchestrator.py                #   CLI + run loop + concurrent dispatch
 │   ├── config.py                      #   Typed dataclasses from YAML
-│   ├── ingester.py                    #   CSV → SQLite inventory ingestion
-│   ├── docs_builder.py                #   GitHub Pages index regeneration
-│   └── finding_store.py               #   YAML + Markdown + JSONL persistence
+│   └── ingester.py                    #   CSV → SQLite inventory ingestion
 │
 ├── data_plane/                        # Modular Data Plane scripts
 │   └── <cve_id>.py                    #   CVE-specific investigation logic
@@ -127,14 +124,10 @@ ThIOClaw/
 │   └── s3_manifest.json               #   S3 bucket config (no secrets)
 │
 ├── findings/                          # Output (gitignored except .gitkeep)
-├── docs/                              # GitHub Pages output
-│   ├── _config.yml                    #   Jekyll config (theme: minima)
-│   ├── _layouts/finding.html          #   Finding page template
-│   └── index.md                       #   Auto-rebuilt landing page
+├── docs/                              # Per-run Markdown + HTML reports
 ├── logs/                              # Structured logs (gitignored)
 └── tests/                             # Unit tests
     ├── test_ingester.py               #   InventoryIngester tests
-    ├── test_docs_builder.py           #   docs_builder tests
     └── test_signal_detection.py       #   Tier 1 signal scoring tests
 ```
 
@@ -201,7 +194,6 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 | Structured logs | Thread-safe JSONL writer | `logs/agent_runs.jsonl` |
 | Metrics | OTel → Prometheus scrape endpoint | `http://localhost:9090/metrics` |
 | Traces | OTel spans (stdout or OTLP gRPC) | Configured in `harness.yaml` |
-| Findings log | Append-only JSONL | `findings/findings.jsonl` |
 
 ### Key Metrics Exported
 

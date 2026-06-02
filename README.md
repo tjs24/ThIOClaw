@@ -2,8 +2,6 @@
 
 > An engineering-first, local-first harness for **transparent, repeatable, and version-controlled** LLM-powered vulnerability investigation. Built for security teams who refuse to accept black-box AI verdicts.
 
-[![Findings](https://img.shields.io/badge/findings-GitHub%20Pages-blue)](https://tej-nik.github.io/ThIOClaw)
-
 ---
 
 ## Why ThIOClaw?
@@ -165,9 +163,7 @@ ThIOClaw/
 ├── harness/                           # Orchestrator engine
 │   ├── orchestrator.py                #   CLI + run loop + concurrent dispatch
 │   ├── config.py                      #   Typed dataclasses from YAML
-│   ├── ingester.py                    #   CSV → SQLite inventory ingestion
-│   ├── finding_store.py               #   YAML + Markdown + JSONL persistence
-│   └── docs_builder.py               #   GitHub Pages index regeneration
+│   └── ingester.py                    #   CSV → SQLite inventory ingestion
 │
 ├── observability/                     # Instrumentation
 │   ├── logger.py                      #   Thread-safe structured JSONL logger
@@ -180,7 +176,7 @@ ThIOClaw/
 │   └── s3_manifest.json               #   S3 config template (no secrets)
 │
 ├── findings/                          # Output: YAML findings + JSONL log (gitignored)
-├── docs/                              # Output: GitHub Pages MD + HTML reports
+├── docs/                              # Output: per-run Markdown + HTML reports
 ├── logs/                              # Output: Structured JSONL logs (gitignored)
 └── tests/                             # Unit tests (pytest)
 ```
@@ -199,8 +195,6 @@ graph TD
     F <-->|"HITL Approval Gates"| G(("Analyst Terminal"))
     F --> H["findings/*.yaml"]
     F --> I["docs/*.md + *.html"]
-    H --> J["findings/findings.jsonl"]
-    J -->|docs_builder| K["docs/index.md (GitHub Pages)"]
 
     style E fill:#ff8c00,color:#fff
     style F fill:#4488ff,color:#fff
@@ -212,7 +206,7 @@ graph TD
 1. **Ingest** — Host inventory telemetry is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
 2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic queries against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
 3. **Tier 2 (Control Plane)** — The OpenClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
-4. **Output** — Findings are persisted as YAML, Markdown, and HTML. An append-only JSONL log feeds the GitHub Pages dashboard. All events are instrumented with OpenTelemetry.
+4. **Output** — Findings are persisted as YAML, Markdown, and HTML per run. All events are instrumented with OpenTelemetry.
 
 ---
 ## Bundled Example: CVE-2026-31431
@@ -239,7 +233,6 @@ ThIOClaw ships with a complete investigation for **CVE-2026-31431** (Linux kerne
 | Structured logs | Thread-safe JSONL writer | `logs/agent_runs.jsonl` |
 | Metrics | OpenTelemetry → Prometheus | `http://localhost:9090/metrics` |
 | Traces | OpenTelemetry spans | stdout (default) or OTLP gRPC endpoint |
-| Findings log | Append-only JSONL | `findings/findings.jsonl` |
 
 ---
 
@@ -261,12 +254,6 @@ See [CLAUDE.md](CLAUDE.md) for detailed instructions and design rationale.
 pytest tests/ -v
 pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 ```
-
----
-
-## GitHub Pages
-
-Push `docs/` to your `main` branch and enable GitHub Pages (source: `docs/` folder). Findings will be published at `https://tej-nik.github.io/ThIOClaw`.
 
 ---
 

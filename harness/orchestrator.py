@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Optional
 
 from harness.config import HarnessConfig, CVETarget, load_config, resolve_telemetry_source
-from harness.docs_builder import build_index
 from harness.ingester import InventoryIngester
 from observability.logger import get_structured_logger
 from observability.metrics import HarnessMetrics
@@ -112,15 +111,6 @@ def investigate_target(
             "Investigation complete for %s | run_id=%s elapsed=%dms",
             target.cve_id, result.get("run_id"), elapsed_ms,
         )
-
-    # 3. Rebuild docs index after each successful run
-    try:
-        build_index(
-            jsonl_path=str(Path(cfg.output.findings_dir) / "findings.jsonl"),
-            docs_dir=cfg.output.docs_dir,
-        )
-    except Exception as exc:
-        logger.warning("docs_builder failed (non-fatal): %s", exc)
 
 
 # ------------------------------------------------------------------
