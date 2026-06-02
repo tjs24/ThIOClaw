@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThIOClaw — A Transparency Harness for LLM-Powered SecOps</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --bg-elev: #131826;
+    --bg-elev-2: #1b2233;
+    --border: #283044;
+    --text: #e6ebf2;
+    --text-dim: #9aa4b8;
+    --accent: #f59e0b;
+    --accent-2: #3b82f6;
+    --accent-3: #22c55e;
+    --accent-4: #ef4444;
+    --accent-5: #a855f7;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    background: radial-gradient(ellipse at top, #11182b 0%, var(--bg) 60%);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { padding: 24px 0 56px; border-bottom: 1px solid var(--border); margin-bottom: 56px; }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--bg-elev-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .pill.accent { color: var(--accent); border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08); }
+  .pill.warn { color: var(--accent-4); border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.08); }
+  .pill.ok { color: var(--accent-3); border-color: rgba(34, 197, 94, 0.35); background: rgba(34, 197, 94, 0.08); }
+  h1 {
+    font-size: 44px;
+    line-height: 1.15;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+  }
+  h1 .claw { color: var(--accent); }
+  .tagline {
+    font-size: 19px;
+    color: var(--text-dim);
+    max-width: 740px;
+    margin: 0;
+  }
+  h2 {
+    font-size: 26px;
+    margin: 56px 0 16px;
+    letter-spacing: -0.01em;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 17px; margin: 24px 0 8px; color: var(--text); }
+  p { margin: 0 0 14px; }
+  code, pre {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  code {
+    background: var(--bg-elev-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #d4d8e0;
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    color: #cbd2dc;
+    margin: 12px 0;
+  }
+  .lede {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 16px;
+    margin: 16px 0 24px;
+  }
+
+  .grid-5 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .principle {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .principle .label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .principle h4 { margin: 0 0 6px; font-size: 15px; }
+  .principle p { margin: 0; font-size: 13px; color: var(--text-dim); }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0 32px;
+    overflow-x: auto;
+  }
+  .layer {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 14px;
+  }
+  .layer:last-child { margin-bottom: 0; }
+  .layer-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+  }
+  .layer-body {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .layer-body.t1 { border-left: 3px solid var(--accent); }
+  .layer-body.t2 { border-left: 3px solid var(--accent-2); }
+  .layer-body.hitl { border-left: 3px solid var(--accent-3); }
+  .layer-body.out { border-left: 3px solid var(--accent-5); }
+  .layer-body strong { color: var(--text); }
+  .arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 14px;
+    margin: -4px 0 -4px 116px;
+  }
+
+  /* Tier comparison */
+  .tier-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 720px) { .tier-compare { grid-template-columns: 1fr; } }
+  .tier-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .tier-card.t1 { border-top: 3px solid var(--accent); }
+  .tier-card.t2 { border-top: 3px solid var(--accent-2); }
+  .tier-card h3 { margin-top: 0; }
+  .tier-card ul { padding-left: 18px; margin: 8px 0 0; color: var(--text-dim); font-size: 14px; }
+  .tier-card li { margin-bottom: 4px; }
+
+  /* Signal table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--bg-elev-2);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.q { font-family: var(--mono); color: var(--accent); }
+  td.tier-exp { color: var(--accent-4); font-weight: 600; }
+  td.tier-sus { color: var(--accent); }
+
+  /* Status board */
+  .status-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0 24px;
+  }
+  .status {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+  }
+  .status .dot {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .status.done .dot { background: var(--accent-3); box-shadow: 0 0 8px rgba(34, 197, 94, 0.6); }
+  .status.partial .dot { background: var(--accent); box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+  .status.stub .dot { background: var(--accent-4); box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+  .status h4 { margin: 0 0 6px; font-size: 14px; padding-right: 20px; }
+  .status p { margin: 0; color: var(--text-dim); font-size: 13px; }
+  .status .meta { display: block; font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+
+  /* Metrics row */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 16px 0 24px;
+  }
+  .metric {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .metric .val { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .metric .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-top: 4px; }
+
+  /* HITL flow */
+  .hitl {
+    background: #0e1320;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #cbd2dc;
+    margin: 12px 0 20px;
+    line-height: 1.7;
+  }
+  .hitl .prompt { color: var(--accent-3); }
+  .hitl .label { color: var(--text-dim); }
+  .hitl .gate { color: var(--accent); }
+
+  footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer a { color: var(--accent-2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .panel h3 { margin-top: 0; }
+  .panel ul { padding-left: 18px; color: var(--text-dim); font-size: 14px; }
+  .panel li { margin-bottom: 4px; }
+  .kbd { font-family: var(--mono); background: var(--bg-elev-2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-size: 12px; color: #d4d8e0; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="tag-row">
+        <span class="pill accent">Engineering-first SecOps</span>
+        <span class="pill">LLM Harness</span>
+        <span class="pill">Local-first</span>
+        <span class="pill ok">Open Source</span>
+      </div>
+      <h1>ThIO<span class="claw">Claw</span> &mdash; a transparency harness for LLM-powered vulnerability investigation</h1>
+      <p class="tagline">
+        Security teams are adopting LLM-driven detection &amp; response as opaque vendor features. ThIOClaw exists
+        because that trade-off is unacceptable: detection logic, agent behavior, and reasoning traces
+        belong in source control &mdash; not in a black box.
+      </p>
+    </header>
+
+    <section>
+      <h2>The true intent</h2>
+      <div class="lede">
+        ThIOClaw is <strong>not a product</strong>. It is a workbench &mdash; a forkable harness that lets a security team
+        layer an LLM agent on top of <em>deterministic</em> telemetry analysis, while keeping every reasoning step,
+        every tool call, and every verdict <em>auditable, reproducible, and version-controlled</em>.
+      </div>
+      <p>
+        The core architectural bet: split investigation into two tiers. <strong>Tier 1</strong> is deterministic
+        pandas math producing a reproducible verdict. <strong>Tier 2</strong> is an LLM agent reasoning <em>on top of</em>
+        the Tier 1 result, gated by Human-In-The-Loop approval before it can propose new queries or update detection
+        logic. The LLM never controls the scoring math &mdash; so the same telemetry always yields the same baseline,
+        and you can measure exactly what the LLM contributes on top.
+      </p>
+
+      <div class="grid-5">
+        <div class="principle">
+          <div class="label">Principle 01</div>
+          <h4>Transparency</h4>
+          <p>Every tool call, evidence lookup, and verdict is logged as structured JSONL and OTel spans.</p>
+        </div>
+        <div class="principle">
+          <div class="label">Principle 02</div>
+          <h4>Repeatability</h4>
+          <p>Tier 1 verdicts are pure pandas math &mdash; same input, same verdict, every time.</p>
+        </div>
+        <div class="principle">
+          <div class="label">Principle 03</div>
+          <h4>Configurability</h4>
+          <p>Rules, weights, thresholds, and exploit context live in YAML &mdash; no hidden dashboards.</p>
+        </div>
+        <div class="principle">
+          <div class="label">Principle 04</div>
+          <h4>Version Control</h4>
+          <p>Detection logic, prompts, and tools are git-diffable code. Review, approve, roll back.</p>
+        </div>
+        <div class="principle">
+          <div class="label">Principle 05</div>
+          <h4>Measurability</h4>
+          <p>Run the same investigation across models &amp; prompts. Compare Tier 1 baseline against Tier 2 reasoning.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Architecture</h2>
+      <p>
+        The orchestrator dispatches each enabled CVE target into its own data plane module via <code>importlib</code>.
+        The data plane writes a typed <code>tier1.json</code> artifact, then invokes the LLM agent as a subprocess.
+        The agent reads back the deterministic results via its tools, may pause for analyst approval, and finally
+        submits a verdict that is persisted as YAML, Markdown, HTML, and an append-only JSONL log.
+      </p>
+
+      <div class="arch">
+        <div class="layer">
+          <div class="layer-label">Orchestrator</div>
+          <div class="layer-body">
+            <strong>harness/orchestrator.py</strong> &middot; loads <code>harness.yaml</code> + <code>targets.yaml</code> &middot;
+            ThreadPoolExecutor dispatches per-CVE investigations
+          </div>
+        </div>
+        <div class="arrow">&darr;&nbsp;&nbsp;importlib.import_module(target.script)</div>
+        <div class="layer">
+          <div class="layer-label">Tier 1<br/>Data Plane</div>
+          <div class="layer-body t1">
+            <strong>data_plane/&lt;cve_id&gt;.py</strong> &middot; deterministic pandas queries &middot; weighted signal scoring &middot;
+            writes <code>{run_id}_tier1.json</code>
+          </div>
+        </div>
+        <div class="arrow">&darr;&nbsp;&nbsp;subprocess: scripts/openclaw.py investigate</div>
+        <div class="layer">
+          <div class="layer-label">Tier 2<br/>Control Plane</div>
+          <div class="layer-body t2">
+            <strong>OpenClawAgent</strong> (LiteLLM &middot; multi-provider) &middot; max 15 turn agentic loop &middot;
+            tools: <code>get_tier1_summary</code>, <code>get_cve_theoretical_path</code>, <code>get_exploit_evidence</code>,
+            <code>propose_query_execution</code>, <code>submit_verdict</code>
+          </div>
+        </div>
+        <div class="arrow">&harr;&nbsp;&nbsp;propose_query_execution &rarr; analyst terminal</div>
+        <div class="layer">
+          <div class="layer-label">HITL Gate</div>
+          <div class="layer-body hitl">
+            Analyst sees <strong>rationale</strong>, <strong>performance impact</strong>, and proposed <strong>query</strong>.
+            Must approve execution. Must <em>separately</em> approve writing the result back to the signature file.
+          </div>
+        </div>
+        <div class="arrow">&darr;</div>
+        <div class="layer">
+          <div class="layer-label">Output</div>
+          <div class="layer-body out">
+            <code>findings/{run_id}_finding.yaml</code> &middot;
+            <code>docs/{CVE}_{run_id}.md/.html</code> &middot;
+            <code>findings/findings.jsonl</code> &middot;
+            <code>logs/agent_runs.jsonl</code> &middot;
+            Prometheus <code>:9090/metrics</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The Tier 1 / Tier 2 split &mdash; why it matters</h2>
+      <p>
+        This is the single most important design decision in the project. It is what makes the LLM
+        <em>measurable</em> rather than authoritative.
+      </p>
+      <div class="tier-compare">
+        <div class="tier-card t1">
+          <h3>Tier 1 &mdash; deterministic data plane</h3>
+          <p style="color: var(--text-dim); font-size: 14px; margin: 0;">
+            Plain Python &amp; pandas. No LLM. Same input, same verdict, forever.
+          </p>
+          <ul>
+            <li>Weighted signal scoring from <code>signals/*.yaml</code></li>
+            <li>Verdict states: <code>exploited</code> &middot; <code>suspicious</code> &middot; <code>benign</code> &middot; <code>inconclusive</code></li>
+            <li>Reproducible across runs, models, and operators</li>
+            <li>Works even if the LLM is unavailable</li>
+          </ul>
+        </div>
+        <div class="tier-card t2">
+          <h3>Tier 2 &mdash; LLM agent on top</h3>
+          <p style="color: var(--text-dim); font-size: 14px; margin: 0;">
+            LiteLLM agentic loop &mdash; Ollama, Anthropic, OpenAI, Bedrock, etc.
+          </p>
+          <ul>
+            <li>Correlates Tier 1 signals against theoretical exploit chain</li>
+            <li>Requests deeper evidence on a per-signal basis</li>
+            <li>Proposes new queries &mdash; gated by analyst approval</li>
+            <li>Cannot override Tier 1 math; only annotates and recommends</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The bundled example: CVE-2026-31431</h2>
+      <p>
+        The repo ships with one reference implementation &mdash; a Linux kernel
+        <code>algif_aead</code> (AF_ALG, socket family 38) local privilege escalation. The signal table below
+        is defined in <code>signals/CVE-2026-31431.yaml</code> and executed deterministically by
+        <code>data_plane/cve_2026_31431.py</code>.
+      </p>
+
+      <table>
+        <thead>
+          <tr><th>Query</th><th>Signal</th><th>Weight</th><th>Tier</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="q">Q1</td><td><code>algif_aead</code> kernel module loaded in inventory</td><td>0.3</td><td class="tier-sus">suspicious</td></tr>
+          <tr><td class="q">Q2</td><td>Unprivileged <code>AF_ALG</code> socket open (uid&gt;0)</td><td>0.5</td><td class="tier-sus">suspicious</td></tr>
+          <tr><td class="q">Q3</td><td>UID escalation after AF_ALG open in same PID <strong>(primary)</strong></td><td>1.0</td><td class="tier-exp">exploited</td></tr>
+          <tr><td class="q">Q4</td><td>Root shell spawned from non-root parent process</td><td>0.9</td><td class="tier-exp">exploited</td></tr>
+          <tr><td class="q">Q5</td><td><code>algif_aead</code> module load event in telemetry</td><td>0.4</td><td class="tier-sus">suspicious</td></tr>
+          <tr><td class="q">Q6</td><td>Exploit staging in <code>/tmp</code>, <code>/dev/shm</code>, or <code>memfd</code></td><td>0.6</td><td class="tier-sus">suspicious</td></tr>
+        </tbody>
+      </table>
+      <p style="color: var(--text-dim); font-size: 14px;">
+        <strong>Verdict logic:</strong> <code>exploited</code> if any exploited-tier signal fires AND
+        total weight &ge; 1.0; <code>suspicious</code> if total &ge; 0.5; <code>benign</code> if total = 0;
+        else <code>inconclusive</code>. The sample telemetry in <code>data/sample_events.json</code> exercises the
+        full chain: Q1 module load &rarr; Q2 AF_ALG open &rarr; Q3 UID escalation &rarr; Q4 root shell &rarr; Q5/Q6 staging.
+      </p>
+    </section>
+
+    <section>
+      <h2>HITL &mdash; the gate the LLM can&rsquo;t skip</h2>
+      <p>
+        When the agent decides existing queries are insufficient, it must call
+        <code>propose_query_execution</code> and articulate its rationale and cost. The analyst sees this in the terminal
+        and decides. A <em>second</em> approval is required to persist the new query into the signature file.
+      </p>
+      <div class="hitl">
+<span class="prompt">[OpenClaw Agent]</span> Proposing Query Execution:<br>
+<span class="label">Rationale:</span> The existing Q6 staging query missed <code>/var/tmp</code> paths&hellip;<br>
+<span class="label">Performance Impact:</span> Medium &mdash; scanning ~50,000 file events<br>
+<span class="label">Query:</span> <code>SELECT * FROM file_events WHERE path LIKE '/var/tmp/%'</code><br>
+<br>
+<span class="gate">Approve execution? (y/N): _</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Current state &mdash; honest stocktake</h2>
+      <p>
+        ThIOClaw is a working harness with one reference CVE implementation. Several components are deliberately
+        stubbed so the seam is visible to the operator.
+      </p>
+
+      <div class="metrics-row">
+        <div class="metric"><div class="val">1,564</div><div class="lbl">Python LOC</div></div>
+        <div class="metric"><div class="val">1</div><div class="lbl">Reference CVE</div></div>
+        <div class="metric"><div class="val">6</div><div class="lbl">Signal Rules</div></div>
+        <div class="metric"><div class="val">5</div><div class="lbl">Agent Tools</div></div>
+        <div class="metric"><div class="val">15</div><div class="lbl">Max Agent Turns</div></div>
+        <div class="metric"><div class="val">9</div><div class="lbl">OTel Metrics</div></div>
+      </div>
+
+      <div class="status-board">
+        <div class="status done">
+          <span class="dot"></span>
+          <h4>Tier 1 deterministic engine</h4>
+          <p>Pandas-based scoring for CVE-2026-31431 with full sample-data exercise.</p>
+          <span class="meta">data_plane/cve_2026_31431.py</span>
+        </div>
+        <div class="status done">
+          <span class="dot"></span>
+          <h4>LiteLLM control plane</h4>
+          <p>Multi-provider agentic loop (Ollama / Anthropic / OpenAI / Bedrock&hellip;).</p>
+          <span class="meta">scripts/openclaw_agent/agent.py</span>
+        </div>
+        <div class="status done">
+          <span class="dot"></span>
+          <h4>Inventory ingester</h4>
+          <p>CSV &rarr; SQLite with mtime-based refresh; trigger_assessment filtering.</p>
+          <span class="meta">harness/ingester.py</span>
+        </div>
+        <div class="status done">
+          <span class="dot"></span>
+          <h4>Findings persistence</h4>
+          <p>YAML + Markdown + HTML reports, append-only JSONL feed for Pages.</p>
+          <span class="meta">harness/finding_store.py</span>
+        </div>
+        <div class="status done">
+          <span class="dot"></span>
+          <h4>Structured logging</h4>
+          <p>Thread-safe JSONL writer mirrored to stdlib logging.</p>
+          <span class="meta">observability/logger.py</span>
+        </div>
+        <div class="status partial">
+          <span class="dot"></span>
+          <h4>OTel metrics &amp; traces</h4>
+          <p>Prometheus exporter wired; falls back to no-op if packages missing.</p>
+          <span class="meta">observability/metrics.py &middot; traces.py</span>
+        </div>
+        <div class="status partial">
+          <span class="dot"></span>
+          <h4>S3 telemetry source</h4>
+          <p>Config + manifest scaffolded; <code>--raw-telemetry s3</code> path not exercised in samples.</p>
+          <span class="meta">harness.yaml &middot; data/s3_manifest.json</span>
+        </div>
+        <div class="status stub">
+          <span class="dot"></span>
+          <h4>HITL query execution</h4>
+          <p>Approval UX works; execution backend is <strong>mocked</strong> (&ldquo;returned 4 suspicious rows&rdquo;).</p>
+          <span class="meta">scripts/openclaw_agent/agent.py</span>
+        </div>
+        <div class="status stub">
+          <span class="dot"></span>
+          <h4>Per-tool trace instrumentation</h4>
+          <p>Top-level span exists; individual tool calls fall back to DummyTracer when OTel path mismatches.</p>
+          <span class="meta">scripts/openclaw_agent/agent.py</span>
+        </div>
+        <div class="status stub">
+          <span class="dot"></span>
+          <h4>Additional CVE targets</h4>
+          <p>Framework is generic; only one target lives in <code>targets.yaml</code> today.</p>
+          <span class="meta">targets.yaml</span>
+        </div>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-dim); margin-top: 4px;">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent-3);vertical-align:middle;margin-right:6px;"></span>shipped
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent);vertical-align:middle;margin:0 6px 0 16px;"></span>partial / scaffold
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent-4);vertical-align:middle;margin:0 6px 0 16px;"></span>stub / mock
+      </p>
+    </section>
+
+    <section>
+      <h2>Stack</h2>
+      <div class="two-col">
+        <div class="panel">
+          <h3>Control plane</h3>
+          <ul>
+            <li><strong>LiteLLM</strong> &mdash; unified tool-calling across providers</li>
+            <li>System prompt + 5 declarative tool schemas</li>
+            <li>Default model: <code>ollama/llama3.1:8b</code> (private, local)</li>
+            <li>Configurable via <code>OPENCLAW_MODEL</code> &amp; <code>OPENCLAW_BASE_URL</code></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Data plane</h3>
+          <ul>
+            <li><strong>pandas</strong> queries over JSON event telemetry</li>
+            <li>Local file source today; S3 manifest scaffolded</li>
+            <li>SQLite-backed inventory (mtime-refresh)</li>
+            <li>One module per CVE &mdash; deletable, reviewable, diff-friendly</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Observability</h3>
+          <ul>
+            <li>Structured <code>logs/agent_runs.jsonl</code></li>
+            <li>Prometheus scrape on <code>:9090/metrics</code></li>
+            <li>9 metric instruments (runs, durations, signals, verdicts&hellip;)</li>
+            <li>OTel traces &mdash; stdout default, OTLP gRPC configurable</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Outputs &amp; reports</h3>
+          <ul>
+            <li>Per-run YAML finding &amp; Markdown/HTML report</li>
+            <li>Append-only <code>findings/findings.jsonl</code></li>
+            <li>Auto-rebuilt GitHub Pages index after each cycle</li>
+            <li>Pytest suite for ingester, docs builder, signal detection</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Run it</h2>
+<pre>python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+
+ollama serve &amp;&amp; ollama pull llama3.1:8b   <span style="color: var(--text-dim);"># or: export OPENCLAW_MODEL=claude-3-5-sonnet-20241022</span>
+
+python -m harness.orchestrator --raw-telemetry local --once
+python -m harness.orchestrator --cve CVE-2026-31431 --once</pre>
+      <p style="font-size: 14px; color: var(--text-dim);">
+        Approve HITL prompts as they appear in the terminal. Inspect <code>findings/</code>, <code>docs/</code>,
+        and <code>logs/agent_runs.jsonl</code> for the full trace of what the agent did and why.
+      </p>
+    </section>
+
+    <footer>
+      <div>
+        ThIOClaw &middot; engineering-first SecOps workbench &middot; built to be forked
+      </div>
+      <div>
+        <code>main</code> @ eae3942 &middot;
+        <a href="index.md">findings index</a> &middot;
+        <a href="../README.md">README</a> &middot;
+        <a href="../CLAUDE.md">design rationale</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
