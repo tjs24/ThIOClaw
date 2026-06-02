@@ -19,31 +19,41 @@ except ImportError:
 
 from openclaw_agent.prompts import SYSTEM_PROMPT
 from openclaw_agent.tools import AVAILABLE_TOOLS, get_tier1_summary, get_cve_theoretical_path, get_exploit_evidence
+from openclaw_agent.providers import resolve_provider, check_required_env, completion_kwargs
 
 class OpenClawAgent:
     def __init__(self):
         self.tracer = get_tracer()
-        
+
 
     def run_investigation(self, cve_id: str, workload_id: str, tier1_path: str, signals_path: str, telemetry_source: str) -> dict:
         with self.tracer.start_as_current_span("openclaw.agent.investigate") as span:
             span.set_attribute("cve_id", cve_id)
             span.set_attribute("workload_id", workload_id)
-            
-            model = os.getenv("OPENCLAW_MODEL", "ollama/llama3.1:8b")
-            base_url = os.getenv("OPENCLAW_BASE_URL", "http://localhost:11434")
-            span.set_attribute("llm_model", model)
-            
+
+            resolution = resolve_provider()
+            span.set_attribute("llm_provider", resolution.provider)
+            span.set_attribute("llm_model", resolution.model)
+
+            missing = check_required_env(resolution)
+            if missing:
+                print(
+                    f"[OpenClaw Agent] Warning: required env vars not set for provider "
+                    f"'{resolution.provider}': {missing}. LiteLLM may still succeed if "
+                    f"creds come from another source (boto3 chain, gcloud ADC, etc)."
+                )
+
+            base_completion_kwargs = completion_kwargs(resolution)
+
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-            
+
             # Start the LLM Loop
             for i in range(15): # Max 15 turns
                 response = litellm.completion(
-                    model=model,
                     messages=messages,
                     tools=AVAILABLE_TOOLS,
                     tool_choice="auto",
-                    base_url=base_url if "ollama" in model.lower() or "v1" in base_url else None
+                    **base_completion_kwargs,
                 )
                 
                 message = response.choices[0].message

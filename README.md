@@ -47,7 +47,7 @@ ollama serve                    # Start the server
 ollama pull llama3.1:8b         # Pull the default model
 ```
 
-#### Option B: Cloud (Anthropic / OpenAI)
+#### Option B: Direct cloud (Anthropic / OpenAI)
 Export your provider's API key and set the model via `OPENCLAW_MODEL`:
 
 ```bash
@@ -59,6 +59,37 @@ export OPENCLAW_MODEL="claude-3-5-sonnet-20241022"
 export OPENAI_API_KEY="sk-proj-..."
 export OPENCLAW_MODEL="gpt-4o"
 ```
+
+#### Option C: AWS Bedrock
+Auth uses the boto3 default credential chain (env vars, `~/.aws/credentials` profile, or IAM role). Region must be set explicitly:
+
+```bash
+export AWS_REGION_NAME="us-east-1"
+export AWS_PROFILE="default"          # or rely on env-var credentials
+export OPENCLAW_MODEL="bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0"
+```
+
+#### Option D: Google Vertex AI
+Works for both Claude on Vertex and Gemini. Requires a service-account key file:
+
+```bash
+export VERTEXAI_PROJECT="your-gcp-project"
+export VERTEXAI_LOCATION="us-central1"
+export GOOGLE_APPLICATION_CREDENTIALS="/abs/path/to/service-account.json"
+export OPENCLAW_MODEL="vertex_ai/gemini-1.5-pro"
+# or: export OPENCLAW_MODEL="vertex_ai/claude-3-5-sonnet@20240620"
+```
+
+#### Option E: Tank-OS OpenClaw gateway (loopback)
+Route through a [Tank-OS](https://github.com/LobsterTrap/tank-os) OpenClaw gateway that holds provider credentials as Podman secrets. ThIOClaw never sees the raw keys:
+
+```bash
+export OPENCLAW_BASE_URL="http://127.0.0.1:18789/v1"
+export OPENCLAW_GATEWAY_TOKEN="..."   # from `openclaw dashboard --no-open`
+export OPENCLAW_MODEL="anthropic/claude-3-5-sonnet-20241022"
+```
+
+> Provider plumbing lives in [`scripts/openclaw_agent/providers.py`](scripts/openclaw_agent/providers.py). To add a new provider, register a `ProviderResolution` factory there. See [`.env.example`](.env.example) for the full set of supported environment variables.
 
 ### 3. Run an Investigation
 
