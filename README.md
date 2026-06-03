@@ -1,4 +1,4 @@
-# ThIOClaw — OpenClaw Vulnerability Investigation Harness
+# ThIOClaw — Vulnerability Investigation Harness
 
 > An engineering-first, local-first harness for **transparent, repeatable, and version-controlled** LLM-powered vulnerability investigation. Built for security teams who refuse to accept black-box AI verdicts.
 
@@ -46,16 +46,16 @@ ollama pull llama3.1:8b         # Pull the default model
 ```
 
 #### Option B: Direct cloud (Anthropic / OpenAI)
-Export your provider's API key and set the model via `OPENCLAW_MODEL`:
+Export your provider's API key and set the model via `THIOCLAW_MODEL`:
 
 ```bash
 # Anthropic Claude 3.5 Sonnet
 export ANTHROPIC_API_KEY="sk-ant-..."
-export OPENCLAW_MODEL="claude-3-5-sonnet-20241022"
+export THIOCLAW_MODEL="claude-3-5-sonnet-20241022"
 
 # OpenAI GPT-4o
 export OPENAI_API_KEY="sk-proj-..."
-export OPENCLAW_MODEL="gpt-4o"
+export THIOCLAW_MODEL="gpt-4o"
 ```
 
 #### Option C: AWS Bedrock
@@ -64,7 +64,7 @@ Auth uses the boto3 default credential chain (env vars, `~/.aws/credentials` pro
 ```bash
 export AWS_REGION_NAME="us-east-1"
 export AWS_PROFILE="default"          # or rely on env-var credentials
-export OPENCLAW_MODEL="bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0"
+export THIOCLAW_MODEL="bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0"
 ```
 
 #### Option D: Google Vertex AI
@@ -74,20 +74,25 @@ Works for both Claude on Vertex and Gemini. Requires a service-account key file:
 export VERTEXAI_PROJECT="your-gcp-project"
 export VERTEXAI_LOCATION="us-central1"
 export GOOGLE_APPLICATION_CREDENTIALS="/abs/path/to/service-account.json"
-export OPENCLAW_MODEL="vertex_ai/gemini-1.5-pro"
-# or: export OPENCLAW_MODEL="vertex_ai/claude-3-5-sonnet@20240620"
+export THIOCLAW_MODEL="vertex_ai/gemini-1.5-pro"
+# or: export THIOCLAW_MODEL="vertex_ai/claude-3-5-sonnet@20240620"
 ```
 
-#### Option E: Tank-OS OpenClaw gateway (loopback)
-Route through a [Tank-OS](https://github.com/LobsterTrap/tank-os) OpenClaw gateway that holds provider credentials as Podman secrets. ThIOClaw never sees the raw keys:
+> Provider plumbing lives in [`scripts/thioclaw_agent/providers.py`](scripts/thioclaw_agent/providers.py). To add a new provider, register a `ProviderResolution` factory there. See [`.env.example`](.env.example) for the full set of supported environment variables.
+
+#### Selecting the agent framework
+
+ThIOClaw ships two parallel implementations of the Tier 2 agent loop, selectable per run:
 
 ```bash
-export OPENCLAW_BASE_URL="http://127.0.0.1:18789/v1"
-export OPENCLAW_GATEWAY_TOKEN="..."   # from `openclaw dashboard --no-open`
-export OPENCLAW_MODEL="anthropic/claude-3-5-sonnet-20241022"
+# Raw LiteLLM tool-calling loop (default)
+export THIOCLAW_FRAMEWORK=litellm-direct
+
+# Strands SDK loop (AgentCore-native, multi-agent primitives, MCP support)
+export THIOCLAW_FRAMEWORK=strands
 ```
 
-> Provider plumbing lives in [`scripts/openclaw_agent/providers.py`](scripts/openclaw_agent/providers.py). To add a new provider, register a `ProviderResolution` factory there. See [`.env.example`](.env.example) for the full set of supported environment variables.
+Both implementations share the same provider routing and verdict contract. The `framework` axis in `openclaw-bench/models.yaml` lets you compare them side-by-side per model.
 
 ### 3. Run an Investigation
 
@@ -107,7 +112,7 @@ python -m harness.orchestrator --raw-telemetry local
 During execution, the agent may pause and ask for your approval:
 
 ```
-[OpenClaw Agent] Proposing Query Execution:
+[ThIOClaw Agent] Proposing Query Execution:
 Rationale: The existing Q6 staging query missed /var/tmp paths...
 Performance Impact: Medium — scanning ~50,000 file events
 Query: SELECT * FROM file_events WHERE path LIKE '/var/tmp/%'
@@ -148,8 +153,8 @@ ThIOClaw/
 │   └── cve_2026_31431.py              #   Deterministic pandas analysis (Q1–Q6)
 │
 ├── scripts/                           # CONTROL PLANE — LLM Agent
-│   ├── openclaw.py                    #   CLI entry point
-│   └── openclaw_agent/
+│   ├── thioclaw.py                    #   CLI entry point
+│   └── thioclaw_agent/
 │       ├── agent.py                   #   Agentic loop (Ollama + tool calling + HITL)
 │       ├── prompts.py                 #   System prompt
 │       └── tools.py                   #   Tool definitions + implementations
@@ -191,7 +196,7 @@ graph TD
     C["Event Telemetry (Local/S3/API)"] -->|Data Plane| D["data_plane/<cve_id>.py"]
     B -->|vulnerable workloads| D
     D -->|"Deterministic queries (e.g. pandas)"| E["Tier 1: Deterministic Signal Scoring"]
-    E -->|tier1.json| F["Tier 2: OpenClaw LLM Agent"]
+    E -->|tier1.json| F["Tier 2: ThIOClaw LLM Agent"]
     F <-->|"HITL Approval Gates"| G(("Analyst Terminal"))
     F --> H["findings/*.yaml"]
     F --> I["docs/*.md + *.html"]
@@ -205,7 +210,7 @@ graph TD
 
 1. **Ingest** — Host inventory telemetry is loaded into SQLite. Workloads matching `trigger_assessments` (e.g., `vulnerable_or_not_confirmed_fixed`) are selected for investigation.
 2. **Tier 1 (Data Plane)** — A modular Python script runs deterministic queries against raw telemetry events. Each query checks for a specific exploitation indicator. Signals are scored using configurable weights to produce a deterministic verdict: `exploited`, `suspicious`, `benign`, or `inconclusive`.
-3. **Tier 2 (Control Plane)** — The OpenClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
+3. **Tier 2 (Control Plane)** — The ThIOClaw LLM agent receives the Tier 1 results and the CVE's theoretical exploit chain. It correlates evidence, requests deeper telemetry inspection, and can propose new queries — but must get **analyst approval** via the terminal before executing them.
 4. **Output** — Findings are persisted as YAML, Markdown, and HTML per run. All events are instrumented with OpenTelemetry.
 
 ---
@@ -241,7 +246,7 @@ ThIOClaw ships with a complete investigation for **CVE-2026-31431** (Linux kerne
 ThIOClaw is designed to be **generic**. Add a new CVE target in three steps:
 
 1. **Define the target** — Add an entry to `targets.yaml` with the CVE-ID, data plane script module path, and signals file.
-2. **Configure signals** — Create `signals/<CVE-ID>.yaml` with weighted rules and an `openclaw_context` block describing the exploit chain for the LLM.
+2. **Configure signals** — Create `signals/<CVE-ID>.yaml` with weighted rules and an `agent_context` block describing the exploit chain for the LLM.
 3. **Write the data plane** — Create `data_plane/<cve_id>.py` implementing the `run_investigation()` function with pandas queries specific to the vulnerability's telemetry fingerprint.
 
 See [CLAUDE.md](CLAUDE.md) for detailed instructions and design rationale.

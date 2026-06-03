@@ -13,7 +13,7 @@ aws:
   # Set to a specific profile name for non-default, e.g. "security-audit"
 
 agent:
-  openclaw_bin: ./scripts/openclaw.py
+  thioclaw_bin: ./scripts/thioclaw.py
   timeout_seconds: 120
 
 orchestrator:
@@ -30,4 +30,4 @@ observability:
   log_path: ./logs/agent_runs.jsonl
   metrics_port: 9090
   trace_endpoint: null           # Set to OTel collector URL to enable remote export
-  service_name: openclaw-harness
+  service_name: thioclaw-harness

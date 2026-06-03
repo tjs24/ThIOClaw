@@ -35,7 +35,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%SZ",
 )
-logger = logging.getLogger("openclaw.orchestrator")
+logger = logging.getLogger("thioclaw.orchestrator")
 
 
 # ------------------------------------------------------------------
@@ -87,7 +87,7 @@ def investigate_target(
         local_inventory_path=cfg.inventory.csv_path,
         s3_manifest_path=cfg.telemetry.s3_manifest_path,
         lookback_hours=cfg.telemetry.lookback_hours,
-        openclaw_bin=cfg.agent.openclaw_bin,
+        thioclaw_bin=cfg.agent.thioclaw_bin,
         signals_file=target.signals_file,
     )
 
@@ -158,7 +158,7 @@ def run_cycle(
 # ------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="OpenClaw Vulnerability Investigation Harness",
+        description="ThIOClaw Vulnerability Investigation Harness",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -201,7 +201,7 @@ def main() -> None:
     ingester.ingest()
 
     logger.info(
-        "OpenClaw Harness starting | telemetry=%s interval=%ds",
+        "ThIOClaw Harness starting | telemetry=%s interval=%ds",
         raw_telemetry, cfg.orchestrator.run_interval_seconds,
     )
 

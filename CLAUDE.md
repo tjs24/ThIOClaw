@@ -12,7 +12,7 @@ Security operations is undergoing a fundamental shift. LLMs are being embedded i
 
 - **Configurability.** Signal rules, weights, verdict thresholds, exploit chain descriptions, and query logic are all defined in version-controlled YAML and Python files — not hidden in a vendor dashboard. Security engineers can tune weights, add new CVE targets, or redefine what "exploited" means by editing a YAML file and committing the change. The LLM's system prompt, available tools, and behavioral constraints are all source code.
 
-- **Version Control.** Every component of the investigation pipeline — from the signal rules (`signals/CVE-*.yaml`) to the data plane analysis logic (`data_plane/cve_*.py`) to the agent's system prompt (`scripts/openclaw_agent/prompts.py`) — lives in Git. Changes to detection logic produce clean diffs. Teams can review, approve, and roll back changes to their threat-hunting workflows using the same engineering practices they use for production code.
+- **Version Control.** Every component of the investigation pipeline — from the signal rules (`signals/CVE-*.yaml`) to the data plane analysis logic (`data_plane/cve_*.py`) to the agent's system prompt (`scripts/thioclaw_agent/prompts.py`) — lives in Git. Changes to detection logic produce clean diffs. Teams can review, approve, and roll back changes to their threat-hunting workflows using the same engineering practices they use for production code.
 
 - **Measurability of Agentic Workflows.** This is the hardest problem and the core reason ThIOClaw exists. When you give an LLM agent tools and autonomy, how do you know it's actually making good decisions? ThIOClaw provides the scaffolding to answer this: deterministic Tier 1 scoring as a baseline, structured Tier 2 agent traces for comparison, Human-In-The-Loop (HITL) approval gates for high-impact actions, and Prometheus metrics tracking agent performance over time. Teams can run the same investigation with different models, different prompts, or different tool configurations and objectively compare outcomes.
 
@@ -38,13 +38,13 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
 │  ├── Deterministic signal scoring (e.g. Pandas)                      │
 │  ├── Tier 1 deterministic verdict                                    │
 │  ├── Write tier1.json                                                │
-│  └── Invoke OpenClaw agent (subprocess)                              │
+│  └── Invoke ThIOClaw Tier 2 agent (subprocess)                              │
 └──────────────┬───────────────────────────────────────────────────────┘
-               │ scripts/openclaw.py investigate --tier1-results ...
+               │ scripts/thioclaw.py investigate --tier1-results ...
                ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                 CONTROL PLANE (scripts/openclaw_agent/)               │
-│  OpenClawAgent (agent.py)                                            │
+│                 CONTROL PLANE (scripts/thioclaw_agent/)               │
+│  ThIOClawAgent (agent.py)                                            │
 │  ├── System prompt (prompts.py)                                      │
 │  ├── Tool definitions (tools.py)                                     │
 │  │   ├── get_tier1_summary        → reads tier1.json                 │
@@ -75,7 +75,7 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
 The Data Plane runs deterministic queries against raw telemetry and scores them using weighted rules defined in `signals/<CVE-ID>.yaml`. This produces a **deterministic** verdict that is reproducible and auditable. No LLM is involved.
 
 ### Tier 2: LLM Agentic Reasoning
-The Control Plane (OpenClaw agent) receives the Tier 1 results and uses an LLM (via Ollama) to perform deeper reasoning. It can request additional evidence, correlate signals against the theoretical exploit chain, and propose new queries — but it must go through the analyst for approval.
+The Control Plane (ThIOClaw agent) receives the Tier 1 results and uses an LLM (via Ollama) to perform deeper reasoning. It can request additional evidence, correlate signals against the theoretical exploit chain, and propose new queries — but it must go through the analyst for approval.
 
 ### Human-In-The-Loop (HITL)
 When the agent calls `propose_query_execution`, execution pauses and the analyst sees the rationale, performance impact, and proposed query in the terminal. The analyst must approve execution. After seeing results, they must approve any updates to the signature SQL files. The LLM cannot autonomously modify detection logic.
@@ -101,8 +101,8 @@ ThIOClaw/
 │   └── <cve_id>.py                    #   CVE-specific investigation logic
 │
 ├── scripts/                           # LLM Control Plane
-│   ├── openclaw.py                    #   CLI wrapper for the agent
-│   └── openclaw_agent/
+│   ├── thioclaw.py                    #   CLI wrapper for the agent
+│   └── thioclaw_agent/
 │       ├── agent.py                   #   Agentic loop (Ollama + tool calling)
 │       ├── prompts.py                 #   System prompt
 │       └── tools.py                   #   Tool definitions + implementations
@@ -147,7 +147,7 @@ ThIOClaw/
        - vulnerable_or_not_confirmed_fixed
    ```
 
-2. **Create signal rules** at `signals/CVE-YYYY-NNNNN.yaml` with weighted rules and an `openclaw_context` block describing the exploit chain for the LLM.
+2. **Create signal rules** at `signals/CVE-YYYY-NNNNN.yaml` with weighted rules and an `agent_context` block describing the exploit chain for the LLM.
 
 3. **Write the data plane script** at `data_plane/<cve_id>.py`. It must export a `run_investigation()` function matching the standard signature. Implement queries (e.g. pandas) specific to the vulnerability's telemetry fingerprint.
 
@@ -182,8 +182,8 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OPENCLAW_MODEL` | `ollama/llama3.1:8b` | Which LLM the agent uses |
-| `OPENCLAW_BASE_URL` | `http://localhost:11434` | The API endpoint for the LLM |
+| `THIOCLAW_MODEL` | `ollama/llama3.1:8b` | Which LLM the agent uses |
+| `THIOCLAW_BASE_URL` | `http://localhost:11434` | The API endpoint for the LLM |
 
 ---
 
@@ -197,11 +197,11 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 
 ### Key Metrics Exported
 
-- `openclaw_run_total` — investigation runs by CVE and status
-- `openclaw_run_duration_ms` — investigation duration histogram
-- `openclaw_workloads_matched` — vulnerable workloads found per CVE
-- `openclaw_findings_total` — findings by CVE and verdict
-- `openclaw_tier1_signals_matched` — individual signal fire counts
+- `thioclaw_run_total` — investigation runs by CVE and status
+- `thioclaw_run_duration_ms` — investigation duration histogram
+- `thioclaw_workloads_matched` — vulnerable workloads found per CVE
+- `thioclaw_findings_total` — findings by CVE and verdict
+- `thioclaw_tier1_signals_matched` — individual signal fire counts
 
 ---
 
@@ -211,7 +211,7 @@ pytest tests/ -v --cov=harness --cov=observability --cov-report=term-missing
 The data plane was originally implemented as Jupyter notebooks executed via Papermill. We migrated to pure Python scripts because: (1) clean git diffs for version-controlled detection logic, (2) standard `pytest` unit testing of individual query functions, (3) dramatically faster execution without kernel startup overhead, and (4) deployment flexibility (Docker, Lambda, stream processors).
 
 ### Why LiteLLM instead of raw SDKs?
-The control plane uses the LiteLLM library because it provides a single, unified interface to 100+ LLM providers. Instead of writing separate code paths for Anthropic, OpenAI, and Ollama, we write one tool-calling loop. Teams can default to Ollama for complete privacy (telemetry never leaves the host), but easily swap to Claude 3.5 Sonnet or GPT-4o via the `OPENCLAW_MODEL` environment variable.
+The control plane uses the LiteLLM library because it provides a single, unified interface to 100+ LLM providers. Instead of writing separate code paths for Anthropic, OpenAI, and Ollama, we write one tool-calling loop. Teams can default to Ollama for complete privacy (telemetry never leaves the host), but easily swap to Claude 3.5 Sonnet or GPT-4o via the `THIOCLAW_MODEL` environment variable.
 
 ### Why separate Tier 1 and Tier 2?
 Deterministic signal scoring (Tier 1) provides a reproducible, auditable baseline that works even if the LLM is unavailable or produces nonsense. The LLM (Tier 2) adds reasoning depth but cannot override the math. This layered architecture lets teams measure what the LLM actually contributes versus deterministic rules alone.
@@ -224,7 +224,7 @@ An LLM proposing to run arbitrary queries against production telemetry is a pote
 ## Common Development Tasks
 
 ### Editing the agent's behavior
-Modify `scripts/openclaw_agent/prompts.py` (system prompt) and `scripts/openclaw_agent/tools.py` (available tools). The agent's reasoning loop is in `agent.py`.
+Modify `scripts/thioclaw_agent/prompts.py` (system prompt) and `scripts/thioclaw_agent/tools.py` (available tools). The agent's reasoning loop is in `agent.py`.
 
 ### Tuning signal weights
 Edit `signals/<CVE-ID>.yaml`. Weights and verdict thresholds are defined there and consumed by the data plane script.
@@ -238,11 +238,11 @@ Edit `signals/<CVE-ID>.yaml`. Weights and verdict thresholds are defined there a
 ### Swapping the LLM model
 ```bash
 # Local Ollama
-export OPENCLAW_MODEL="ollama/qwen2.5:7b"
+export THIOCLAW_MODEL="ollama/qwen2.5:7b"
 
 # Anthropic
 export ANTHROPIC_API_KEY="sk-ant-..."
-export OPENCLAW_MODEL="claude-3-5-sonnet-20241022"
+export THIOCLAW_MODEL="claude-3-5-sonnet-20241022"
 ```
 
 ---

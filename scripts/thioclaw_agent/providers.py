@@ -1,27 +1,62 @@
 """
-scripts/openclaw_agent/providers.py
+scripts/thioclaw_agent/providers.py
 -----------------------------------
-LLM provider boilerplate for OpenClaw's LiteLLM control plane.
+LLM provider boilerplate for the ThIOClaw control plane (raw LiteLLM loop).
 
-Resolves an OPENCLAW_PROVIDER alias (or infers one from OPENCLAW_MODEL)
+Resolves a THIOCLAW_PROVIDER alias (or infers one from THIOCLAW_MODEL)
 into the kwargs litellm.completion() needs. Adding a new provider is a
 matter of writing one function and registering it in PROVIDER_PROFILES.
 
-Currently supported (via LiteLLM):
+Supported (via LiteLLM):
   - ollama          local-first default
   - anthropic       direct ANTHROPIC_API_KEY
   - openai          direct OPENAI_API_KEY
   - bedrock         AWS Bedrock via boto3 default credential chain
   - vertex_ai       Google Vertex AI (Claude on Vertex or Gemini)
-  - openclaw        Tank-OS gateway (OpenAI-compatible loopback endpoint)
 
 Required env vars for each provider are documented inline below.
+
+--------------------------------------------------------------------------
+Backwards compatibility (one release):
+  Legacy OPENCLAW_PROVIDER, OPENCLAW_MODEL, OPENCLAW_BASE_URL env vars are
+  still honored when the THIOCLAW_* equivalent is unset, with a deprecation
+  warning printed once per process. They will be removed in the next release.
+--------------------------------------------------------------------------
 """
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from typing import Callable, Optional
+
+
+_LEGACY_WARNED: set[str] = set()
+
+
+def _env(var: str, default: Optional[str] = None) -> Optional[str]:
+    """Read THIOCLAW_<NAME> with fallback to legacy OPENCLAW_<NAME>.
+
+    One-shot deprecation warning per legacy variable; the new name always wins.
+    """
+    val = os.getenv(var)
+    if val is not None:
+        return val
+
+    if var.startswith("THIOCLAW_"):
+        legacy = "OPENCLAW_" + var[len("THIOCLAW_"):]
+        legacy_val = os.getenv(legacy)
+        if legacy_val is not None:
+            if legacy not in _LEGACY_WARNED:
+                print(
+                    f"[ThIOClaw] DEPRECATED: env var {legacy} is deprecated; "
+                    f"use {var}. Falling back for this release.",
+                    file=sys.stderr,
+                )
+                _LEGACY_WARNED.add(legacy)
+            return legacy_val
+
+    return default
 
 
 @dataclass(frozen=True)
@@ -47,8 +82,8 @@ def _ollama() -> ProviderResolution:
     """Local Ollama. Default model: llama3.1:8b."""
     return ProviderResolution(
         provider="ollama",
-        model=os.getenv("OPENCLAW_MODEL", "ollama/llama3.1:8b"),
-        base_url=os.getenv("OPENCLAW_BASE_URL", "http://localhost:11434"),
+        model=_env("THIOCLAW_MODEL", "ollama/llama3.1:8b"),
+        base_url=_env("THIOCLAW_BASE_URL", "http://localhost:11434"),
     )
 
 
@@ -56,7 +91,7 @@ def _anthropic() -> ProviderResolution:
     """Direct Anthropic API. Required: ANTHROPIC_API_KEY."""
     return ProviderResolution(
         provider="anthropic",
-        model=os.getenv("OPENCLAW_MODEL", "claude-3-5-sonnet-20241022"),
+        model=_env("THIOCLAW_MODEL", "claude-3-5-sonnet-20241022"),
         required_env=("ANTHROPIC_API_KEY",),
     )
 
@@ -65,7 +100,7 @@ def _openai() -> ProviderResolution:
     """Direct OpenAI API. Required: OPENAI_API_KEY."""
     return ProviderResolution(
         provider="openai",
-        model=os.getenv("OPENCLAW_MODEL", "gpt-4o"),
+        model=_env("THIOCLAW_MODEL", "gpt-4o"),
         required_env=("OPENAI_API_KEY",),
     )
 
@@ -87,8 +122,8 @@ def _bedrock() -> ProviderResolution:
     """
     return ProviderResolution(
         provider="bedrock",
-        model=os.getenv(
-            "OPENCLAW_MODEL",
+        model=_env(
+            "THIOCLAW_MODEL",
             "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
         ),
         extra_kwargs={
@@ -115,7 +150,7 @@ def _vertex_ai() -> ProviderResolution:
     """
     return ProviderResolution(
         provider="vertex_ai",
-        model=os.getenv("OPENCLAW_MODEL", "vertex_ai/gemini-1.5-pro"),
+        model=_env("THIOCLAW_MODEL", "vertex_ai/gemini-1.5-pro"),
         extra_kwargs={
             "vertex_project": os.getenv("VERTEXAI_PROJECT"),
             "vertex_location": os.getenv("VERTEXAI_LOCATION", "us-central1"),
@@ -128,40 +163,12 @@ def _vertex_ai() -> ProviderResolution:
     )
 
 
-def _openclaw_gateway() -> ProviderResolution:
-    """
-    Tank-OS OpenClaw gateway (loopback, OpenAI-compatible).
-
-    The gateway runs as a rootless Podman container under the `openclaw` user
-    in the Tank-OS VM. It exposes /v1/chat/completions on 127.0.0.1:18789 and
-    holds provider credentials as Podman secrets — ThIOClaw never sees them.
-
-    Required env:
-      OPENCLAW_BASE_URL                e.g. http://127.0.0.1:18789/v1
-      OPENCLAW_GATEWAY_TOKEN           gateway auth token
-
-    OPENCLAW_MODEL is the gateway-routed model alias (e.g.
-    'anthropic/claude-3-5-sonnet-20241022' or 'openai/gpt-4o'); the gateway
-    decides which credential to use.
-    """
-    return ProviderResolution(
-        provider="openclaw",
-        model=os.getenv("OPENCLAW_MODEL", "anthropic/claude-3-5-sonnet-20241022"),
-        base_url=os.getenv("OPENCLAW_BASE_URL", "http://127.0.0.1:18789/v1"),
-        extra_kwargs={
-            "api_key": os.getenv("OPENCLAW_GATEWAY_TOKEN", "sk-dummy"),
-        },
-        required_env=("OPENCLAW_BASE_URL", "OPENCLAW_GATEWAY_TOKEN"),
-    )
-
-
 PROVIDER_PROFILES: dict[str, Callable[[], ProviderResolution]] = {
     "ollama": _ollama,
     "anthropic": _anthropic,
     "openai": _openai,
     "bedrock": _bedrock,
     "vertex_ai": _vertex_ai,
-    "openclaw": _openclaw_gateway,
 }
 
 
@@ -190,17 +197,17 @@ def resolve_provider(provider: Optional[str] = None) -> ProviderResolution:
     """
     Order of precedence:
       1. explicit `provider` argument
-      2. OPENCLAW_PROVIDER env var
-      3. inferred from OPENCLAW_MODEL prefix
+      2. THIOCLAW_PROVIDER env var (or legacy OPENCLAW_PROVIDER with warning)
+      3. inferred from THIOCLAW_MODEL prefix
       4. default: 'ollama'
     """
-    alias = provider or os.getenv("OPENCLAW_PROVIDER")
+    alias = provider or _env("THIOCLAW_PROVIDER")
     if not alias:
-        alias = _infer_provider_from_model(os.getenv("OPENCLAW_MODEL", "")) or "ollama"
+        alias = _infer_provider_from_model(_env("THIOCLAW_MODEL", "")) or "ollama"
 
     if alias not in PROVIDER_PROFILES:
         raise ValueError(
-            f"Unknown OPENCLAW_PROVIDER '{alias}'. "
+            f"Unknown THIOCLAW_PROVIDER '{alias}'. "
             f"Known: {sorted(PROVIDER_PROFILES)}"
         )
     return PROVIDER_PROFILES[alias]()

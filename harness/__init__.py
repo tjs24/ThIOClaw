@@ -1,1 +1,1 @@
-"""OpenClaw Harness — Python package."""
+"""ThIOClaw Harness — Python package."""

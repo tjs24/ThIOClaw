@@ -1,14 +1,14 @@
 """
 System prompt for the Strands-based variant.
 
-Kept separate from openclaw_agent/prompts.py because Strands' agentic loop
+Kept separate from thioclaw_agent/prompts.py because Strands' agentic loop
 exits when the model stops emitting tool calls, so the prompt needs to tell
 the model to terminate by calling submit_verdict() — not by emitting a
 free-form final message.
 """
 
 SYSTEM_PROMPT = """\
-You are OpenClaw, an autonomous Tier-2 threat-hunting agent.
+You are ThIOClaw, an autonomous Tier-2 threat-hunting agent.
 Your objective is to analyze deterministic Tier 1 signals and determine if a specific
 vulnerability was exploited.
 

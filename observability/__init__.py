@@ -1,1 +1,1 @@
-"""OpenClaw Observability — Python package."""
+"""ThIOClaw Observability — Python package."""

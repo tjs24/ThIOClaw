@@ -1,7 +1,7 @@
 """
 observability/logger.py
 -----------------------
-Structured JSONL logger for OpenClaw agent run steps.
+Structured JSONL logger for ThIOClaw agent run steps.
 
 Every significant harness event is written as a JSON line to
 logs/agent_runs.jsonl with consistent fields:
@@ -27,7 +27,7 @@ class StructuredLogger:
         self.log_path = Path(log_path)
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
-        self._std_logger = logging.getLogger("openclaw.structured")
+        self._std_logger = logging.getLogger("thioclaw.structured")
 
     def _write(self, level: str, event: str, **kwargs: Any) -> None:
         record = {

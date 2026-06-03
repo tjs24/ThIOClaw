@@ -17,17 +17,17 @@ except ImportError:
         def start_as_current_span(self, *args): return DummySpan()
     def get_tracer(): return DummyTracer()
 
-from openclaw_agent.prompts import SYSTEM_PROMPT
-from openclaw_agent.tools import AVAILABLE_TOOLS, get_tier1_summary, get_cve_theoretical_path, get_exploit_evidence
-from openclaw_agent.providers import resolve_provider, check_required_env, completion_kwargs
+from thioclaw_agent.prompts import SYSTEM_PROMPT
+from thioclaw_agent.tools import AVAILABLE_TOOLS, get_tier1_summary, get_cve_theoretical_path, get_exploit_evidence
+from thioclaw_agent.providers import resolve_provider, check_required_env, completion_kwargs
 
-class OpenClawAgent:
+class ThIOClawAgent:
     def __init__(self):
         self.tracer = get_tracer()
 
 
     def run_investigation(self, cve_id: str, workload_id: str, tier1_path: str, signals_path: str, telemetry_source: str) -> dict:
-        with self.tracer.start_as_current_span("openclaw.agent.investigate") as span:
+        with self.tracer.start_as_current_span("thioclaw.agent.investigate") as span:
             span.set_attribute("cve_id", cve_id)
             span.set_attribute("workload_id", workload_id)
 
@@ -38,7 +38,7 @@ class OpenClawAgent:
             missing = check_required_env(resolution)
             if missing:
                 print(
-                    f"[OpenClaw Agent] Warning: required env vars not set for provider "
+                    f"[ThIOClaw Agent] Warning: required env vars not set for provider "
                     f"'{resolution.provider}': {missing}. LiteLLM may still succeed if "
                     f"creds come from another source (boto3 chain, gcloud ADC, etc)."
                 )
@@ -97,7 +97,7 @@ class OpenClawAgent:
                             result = get_exploit_evidence(tier1_path, args.get("signal_name"))
                         elif func_name == "propose_query_execution":
                             args = json.loads(tool_call.function.arguments)
-                            print(f"\n[OpenClaw Agent] Proposing Query Execution:")
+                            print(f"\n[ThIOClaw Agent] Proposing Query Execution:")
                             print(f"Rationale: {args.get('rationale')}")
                             print(f"Performance Impact: {args.get('performance_impact')}")
                             print(f"Query:\n{args.get('query_sql')}\n")
@@ -109,7 +109,7 @@ class OpenClawAgent:
                                 result = "Query executed successfully. Returned 4 suspicious rows."
                                 print(f"{result}\n")
                                 
-                                update_approval = input(f"[OpenClaw Agent] Do you approve updating the signature file {args.get('target_sql_file')} with this query? (y/N): ")
+                                update_approval = input(f"[ThIOClaw Agent] Do you approve updating the signature file {args.get('target_sql_file')} with this query? (y/N): ")
                                 if update_approval.lower().startswith('y'):
                                     result += f" Target file {args.get('target_sql_file')} updated."
                                     print(f"-> Updated {args.get('target_sql_file')}")

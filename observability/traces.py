@@ -1,7 +1,7 @@
 """
 observability/traces.py
 -----------------------
-OpenTelemetry trace context helpers for the OpenClaw harness.
+OpenTelemetry trace context helpers for the ThIOClaw harness.
 
 Provides a context manager `investigation_span` that creates a root span
 for each investigation run, with child spans for telemetry fetch,
@@ -22,7 +22,7 @@ _enabled = False
 
 
 def init_tracing(
-    service_name: str = "openclaw-harness",
+    service_name: str = "thioclaw-harness",
     endpoint: Optional[str] = None,
 ) -> None:
     """
@@ -49,7 +49,7 @@ def init_tracing(
 
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
-        _tracer = trace.get_tracer("openclaw.harness", "1.0.0")
+        _tracer = trace.get_tracer("thioclaw.harness", "1.0.0")
         _enabled = True
         logger.info("OTel tracing initialised (endpoint=%s)", endpoint or "console")
 
@@ -75,7 +75,7 @@ def investigation_span(
 
     from opentelemetry import trace
 
-    with _tracer.start_as_current_span("openclaw.run") as span:
+    with _tracer.start_as_current_span("thioclaw.run") as span:
         span.set_attribute("cve_id", cve_id)
         span.set_attribute("run_id", run_id)
         span.set_attribute("raw_telemetry", raw_telemetry)

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-OpenClaw - Threat Hunting Agent CLI
+ThIOClaw — Threat Hunting Agent CLI
 
 Dispatches to one of two framework implementations of the Tier 2 agent loop:
-  - litellm-direct (default): scripts/openclaw_agent/        (raw LiteLLM loop)
-  - strands:                  scripts/openclaw_agent_strands/ (Strands SDK)
+  - litellm-direct (default): scripts/thioclaw_agent/        (raw LiteLLM loop)
+  - strands:                  scripts/thioclaw_agent_strands/ (Strands SDK)
 
-Select via OPENCLAW_FRAMEWORK env var, or --framework CLI flag.
+Select via THIOCLAW_FRAMEWORK env var, or --framework CLI flag.
+Legacy OPENCLAW_FRAMEWORK is honored with a one-release deprecation warning.
 
 Both implementations satisfy the same contract: take a tier1.json + signals YAML
 and return a verdict dict {verdict, confidence, reasoning_trace, recommended_action}.
@@ -22,22 +23,38 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
+def _framework_from_env() -> str:
+    """Read THIOCLAW_FRAMEWORK with one-release fallback to OPENCLAW_FRAMEWORK."""
+    val = os.getenv("THIOCLAW_FRAMEWORK")
+    if val:
+        return val
+    legacy = os.getenv("OPENCLAW_FRAMEWORK")
+    if legacy:
+        print(
+            "[ThIOClaw] DEPRECATED: env var OPENCLAW_FRAMEWORK is deprecated; "
+            "use THIOCLAW_FRAMEWORK. Falling back for this release.",
+            file=sys.stderr,
+        )
+        return legacy
+    return "litellm-direct"
+
+
 def _load_agent(framework: str):
     """Import + instantiate the requested framework's agent class."""
     if framework == "litellm-direct":
-        from openclaw_agent.agent import OpenClawAgent
-        return OpenClawAgent()
+        from thioclaw_agent.agent import ThIOClawAgent
+        return ThIOClawAgent()
     if framework == "strands":
-        from openclaw_agent_strands.agent import OpenClawStrandsAgent
-        return OpenClawStrandsAgent()
+        from thioclaw_agent_strands.agent import ThIOClawStrandsAgent
+        return ThIOClawStrandsAgent()
     raise ValueError(
-        f"Unknown OPENCLAW_FRAMEWORK '{framework}'. "
+        f"Unknown THIOCLAW_FRAMEWORK '{framework}'. "
         f"Supported: 'litellm-direct', 'strands'."
     )
 
 
 def main():
-    parser = argparse.ArgumentParser(description="OpenClaw Threat Hunting Agent")
+    parser = argparse.ArgumentParser(description="ThIOClaw Threat Hunting Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     investigate_parser = subparsers.add_parser("investigate")
@@ -50,9 +67,9 @@ def main():
     investigate_parser.add_argument("--output-file", required=True)
     investigate_parser.add_argument(
         "--framework",
-        default=os.getenv("OPENCLAW_FRAMEWORK", "litellm-direct"),
+        default=_framework_from_env(),
         choices=("litellm-direct", "strands"),
-        help="Agent framework to use (default: env OPENCLAW_FRAMEWORK or litellm-direct).",
+        help="Agent framework to use (default: env THIOCLAW_FRAMEWORK or litellm-direct).",
     )
 
     args = parser.parse_args()

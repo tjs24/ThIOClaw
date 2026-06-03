@@ -16,7 +16,7 @@ def run_investigation(
     local_inventory_path: str,
     s3_manifest_path: str,
     lookback_hours: int = 24,
-    openclaw_bin: str = "./scripts/openclaw.py",
+    thioclaw_bin: str = "./scripts/thioclaw.py",
     signals_file: str = "",
     run_id: str = "",
     extra_params: dict = None,
@@ -126,22 +126,22 @@ def run_investigation(
     tier1_path = output_path / f"{run_id}_tier1.json"
     tier1_path.write_text(json.dumps(tier1_results, indent=2))
 
-    # Invoke OpenClaw
-    openclaw_finding = {}
-    if pathlib.Path(openclaw_bin).exists():
+    # Invoke ThIOClaw Tier 2 agent
+    tier2_finding = {}
+    if pathlib.Path(thioclaw_bin).exists():
         res = subprocess.run([
-            openclaw_bin, "investigate",
+            thioclaw_bin, "investigate",
             "--cve", cve_id, "--workload-id", workload_id,
             "--tier1-results", str(tier1_path),
             "--exploit-signals", signals_file,
             "--raw-telemetry", raw_telemetry,
-            "--output-json", "--output-file", str(output_path / f"{run_id}_openclaw.json")
+            "--output-json", "--output-file", str(output_path / f"{run_id}_tier2.json")
         ], capture_output=True, text=True)
         try:
-            if (output_path / f"{run_id}_openclaw.json").exists():
-                openclaw_finding = json.loads((output_path / f"{run_id}_openclaw.json").read_text())
+            if (output_path / f"{run_id}_tier2.json").exists():
+                tier2_finding = json.loads((output_path / f"{run_id}_tier2.json").read_text())
             elif res.stdout:
-                openclaw_finding = json.loads(res.stdout)
+                tier2_finding = json.loads(res.stdout)
         except json.JSONDecodeError: pass
 
     # Reports
@@ -154,11 +154,11 @@ def run_investigation(
 ## Deterministic Signals Fired
 {signals_bullet_list}
 
-## OpenClaw Agent Reasoning
-{openclaw_finding.get('reasoning_trace', 'N/A')}
+## ThIOClaw Agent Reasoning
+{tier2_finding.get('reasoning_trace', 'N/A')}
 
 ## Recommended Action
-> {openclaw_finding.get('recommended_action', 'N/A')}
+> {tier2_finding.get('recommended_action', 'N/A')}
 """
     docs_dir = pathlib.Path("docs")
     docs_dir.mkdir(parents=True, exist_ok=True)
@@ -170,7 +170,7 @@ def run_investigation(
     html_path.write_text(f"<html><body>{html_content}</body></html>")
 
     finding = {
-        "run_id": run_id, "cve_id": cve_id, "tier1_verdict": tier1_verdict, "tier2": openclaw_finding
+        "run_id": run_id, "cve_id": cve_id, "tier1_verdict": tier1_verdict, "tier2": tier2_finding
     }
     yaml_path = output_path / f"{run_id}_finding.yaml"
     yaml_path.write_text(yaml.dump(finding))

@@ -1,19 +1,19 @@
 """
 observability/metrics.py
 ------------------------
-OpenTelemetry metrics for the OpenClaw harness.
+OpenTelemetry metrics for the ThIOClaw harness.
 Exposes a Prometheus scrape endpoint on the configured port.
 
 Metrics exported:
-  openclaw_run_total              (counter)   cve_id, status
-  openclaw_run_duration_ms        (histogram)  cve_id
-  openclaw_workloads_matched      (gauge)      cve_id
-  openclaw_findings_total         (counter)    cve_id, verdict
-  openclaw_notebook_duration_ms   (histogram)  cve_id
-  openclaw_notebook_errors_total  (counter)    cve_id
-  openclaw_tier1_signals_matched  (counter)    cve_id, rule_id
-  openclaw_telemetry_rows_loaded  (gauge)      source
-  openclaw_docs_pages_generated   (counter)    cve_id
+  thioclaw_run_total              (counter)   cve_id, status
+  thioclaw_run_duration_ms        (histogram)  cve_id
+  thioclaw_workloads_matched      (gauge)      cve_id
+  thioclaw_findings_total         (counter)    cve_id, verdict
+  thioclaw_notebook_duration_ms   (histogram)  cve_id
+  thioclaw_notebook_errors_total  (counter)    cve_id
+  thioclaw_tier1_signals_matched  (counter)    cve_id, rule_id
+  thioclaw_telemetry_rows_loaded  (gauge)      source
+  thioclaw_docs_pages_generated   (counter)    cve_id
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class HarnessMetrics:
     Falls back gracefully if opentelemetry packages are not installed.
     """
 
-    def __init__(self, port: int = 9090, service_name: str = "openclaw-harness"):
+    def __init__(self, port: int = 9090, service_name: str = "thioclaw-harness"):
         self.port = port
         self.service_name = service_name
         self._enabled = False
@@ -51,44 +51,44 @@ class HarnessMetrics:
             provider = MeterProvider(resource=resource, metric_readers=[reader])
             otel_metrics.set_meter_provider(provider)
 
-            meter = otel_metrics.get_meter("openclaw.harness", "1.0.0")
+            meter = otel_metrics.get_meter("thioclaw.harness", "1.0.0")
 
             self._run_counter = meter.create_counter(
-                "openclaw_run_total",
+                "thioclaw_run_total",
                 description="Total agent investigation runs",
             )
             self._run_duration = meter.create_histogram(
-                "openclaw_run_duration_ms",
+                "thioclaw_run_duration_ms",
                 description="Investigation run duration in milliseconds",
                 unit="ms",
             )
             self._workloads_gauge = meter.create_up_down_counter(
-                "openclaw_workloads_matched",
+                "thioclaw_workloads_matched",
                 description="Workloads matched per CVE investigation",
             )
             self._findings_counter = meter.create_counter(
-                "openclaw_findings_total",
+                "thioclaw_findings_total",
                 description="Total findings by verdict",
             )
             self._notebook_duration = meter.create_histogram(
-                "openclaw_notebook_duration_ms",
+                "thioclaw_notebook_duration_ms",
                 description="Notebook execution duration",
                 unit="ms",
             )
             self._notebook_errors = meter.create_counter(
-                "openclaw_notebook_errors_total",
+                "thioclaw_notebook_errors_total",
                 description="Notebook execution errors",
             )
             self._signals_counter = meter.create_counter(
-                "openclaw_tier1_signals_matched",
+                "thioclaw_tier1_signals_matched",
                 description="Tier 1 signal rule matches",
             )
             self._telemetry_rows = meter.create_up_down_counter(
-                "openclaw_telemetry_rows_loaded",
+                "thioclaw_telemetry_rows_loaded",
                 description="Telemetry event rows loaded",
             )
             self._docs_counter = meter.create_counter(
-                "openclaw_docs_pages_generated",
+                "thioclaw_docs_pages_generated",
                 description="Documentation pages generated",
             )
 

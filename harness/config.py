@@ -35,7 +35,7 @@ class AWSConfig:
 
 @dataclass
 class AgentConfig:
-    openclaw_bin: str = "./openclaw"
+    thioclaw_bin: str = "./scripts/thioclaw.py"
     timeout_seconds: int = 120
 
 
@@ -58,7 +58,7 @@ class ObservabilityConfig:
     log_path: str = "./logs/agent_runs.jsonl"
     metrics_port: int = 9090
     trace_endpoint: Optional[str] = None
-    service_name: str = "openclaw-harness"
+    service_name: str = "thioclaw-harness"
 
 
 @dataclass

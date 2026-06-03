@@ -1,7 +1,7 @@
 """
-Strands @tool-decorated wrappers around the existing OpenClaw tool implementations.
+Strands @tool-decorated wrappers around the existing ThIOClaw tool implementations.
 
-We reuse openclaw_agent/tools.py's helpers (get_tier1_summary, get_cve_theoretical_path,
+We reuse thioclaw_agent/tools.py's helpers (get_tier1_summary, get_cve_theoretical_path,
 get_exploit_evidence) and wrap them in Strands @tool decorators. Path arguments
 (tier1_path, signals_path) are captured via a closure in build_tools() since they
 are session-bound (one investigation = one Tier 1 file = one signals file) and
@@ -19,7 +19,7 @@ from strands import tool
 
 # Reuse the existing implementations — Tier 1 reading is identical regardless
 # of which framework drives Tier 2.
-from openclaw_agent.tools import (
+from thioclaw_agent.tools import (
     get_tier1_summary as _read_tier1_summary,
     get_cve_theoretical_path as _read_cve_theoretical_path,
     get_exploit_evidence as _read_exploit_evidence,
@@ -60,7 +60,7 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
         target CVE from its signals YAML.
 
         Returns a JSON-encoded representation of the CVE's signal rules,
-        verdict logic, and openclaw_context. Use this to map fired signals to
+        verdict logic, block describing the theoretical exploit chain. Use this to map fired signals to
         steps in the expected exploit chain.
         """
         return _read_cve_theoretical_path(signals_path)
@@ -101,7 +101,7 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
             target_sql_file: The signature file to update if approved
                 (e.g. queries/CVE-2026-31431/q6.sql).
         """
-        print("\n[OpenClaw Agent / Strands] Proposing Query Execution:")
+        print("\n[ThIOClaw Agent / Strands] Proposing Query Execution:")
         print(f"Rationale: {rationale}")
         print(f"Performance Impact: {performance_impact}")
         print(f"Query:\n{query_sql}\n")
@@ -117,7 +117,7 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
         print(f"{result}\n")
 
         update_approval = input(
-            f"[OpenClaw Agent / Strands] Approve updating {target_sql_file}? (y/N): "
+            f"[ThIOClaw Agent / Strands] Approve updating {target_sql_file}? (y/N): "
         )
         if update_approval.lower().startswith("y"):
             result += f" Target file {target_sql_file} updated."

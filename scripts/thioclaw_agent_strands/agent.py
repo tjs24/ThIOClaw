@@ -1,14 +1,14 @@
 """
-Strands-based OpenClaw agent (Tier 2 reasoning).
+Strands-based ThIOClaw agent (Tier 2 reasoning).
 
-Parallel implementation to openclaw_agent/agent.py (the LiteLLM-direct path).
+Parallel implementation to thioclaw_agent/agent.py (the LiteLLM-direct path).
 Both satisfy the same harness contract: given a tier1.json path and a signals
 YAML path, run a tool-using agentic loop to produce a verdict dict with
 keys: verdict, confidence, reasoning_trace, recommended_action.
 
-Selected via OPENCLAW_FRAMEWORK=strands in scripts/openclaw.py.
+Selected via THIOCLAW_FRAMEWORK=strands in scripts/thioclaw.py.
 
-Model routing reuses the existing openclaw_agent.providers module so the same
+Model routing reuses the existing thioclaw_agent.providers module so the same
 provider profiles (Ollama, Anthropic, OpenAI, Bedrock, Vertex, gateway) work
 across both frameworks. Strands' LiteLLMModel adapter accepts any LiteLLM
 model string.
@@ -34,16 +34,16 @@ except ImportError:
 from strands import Agent
 from strands.models.litellm import LiteLLMModel
 
-from openclaw_agent.providers import (
+from thioclaw_agent.providers import (
     resolve_provider,
     check_required_env,
     completion_kwargs,
 )
-from openclaw_agent_strands.prompts import SYSTEM_PROMPT
-from openclaw_agent_strands.tools import build_tools, VerdictCapture
+from thioclaw_agent_strands.prompts import SYSTEM_PROMPT
+from thioclaw_agent_strands.tools import build_tools, VerdictCapture
 
 
-class OpenClawStrandsAgent:
+class ThIOClawStrandsAgent:
     """Tier 2 agent loop driven by the Strands SDK."""
 
     def __init__(self):
@@ -57,7 +57,7 @@ class OpenClawStrandsAgent:
         signals_path: str,
         telemetry_source: str,
     ) -> dict:
-        with self.tracer.start_as_current_span("openclaw.agent.investigate") as span:
+        with self.tracer.start_as_current_span("thioclaw.agent.investigate") as span:
             span.set_attribute("cve_id", cve_id)
             span.set_attribute("workload_id", workload_id)
             span.set_attribute("agent.framework", "strands")
@@ -69,7 +69,7 @@ class OpenClawStrandsAgent:
             missing = check_required_env(resolution)
             if missing:
                 print(
-                    f"[OpenClaw Agent / Strands] Warning: required env vars not set "
+                    f"[ThIOClaw Agent / Strands] Warning: required env vars not set "
                     f"for provider '{resolution.provider}': {missing}. LiteLLM may "
                     f"still succeed via boto3 chain / gcloud ADC."
                 )
