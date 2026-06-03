@@ -23,8 +23,13 @@ opentelemetry-exporter-prometheus>=0.45b0
 opentelemetry-exporter-otlp>=1.24.0     # conditionally loaded in observability/traces.py
 prometheus-client>=0.20.0
 
-# LLM control plane
+# LLM control plane — two parallel implementations of the Tier 2 agent loop:
+#   - openclaw_agent/         : raw LiteLLM tool-calling loop  (default)
+#   - openclaw_agent_strands/ : Strands SDK loop               (AgentCore-native, multi-agent)
+# Both share the same providers.py for LLM routing; selected per run via
+# OPENCLAW_FRAMEWORK=litellm-direct | strands  (see scripts/openclaw.py).
 litellm>=1.35.0
+strands-agents>=0.1.0
 
 # Testing
 pytest>=8.0.0
