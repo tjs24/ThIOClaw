@@ -1,9 +1,9 @@
 inventory:
-  csv_path: ./data/inventory.csv
+  csv_path: ./data/sample_inventory.csv
   refresh_interval_seconds: 60
 
 telemetry:
-  local_json_path: ./data/events.json
+  local_json_path: ./data/sample_events.json
   s3_manifest_path: ./data/s3_manifest.json
   lookback_hours: 24
   default_source: local          # overridden by --raw-telemetry flag
