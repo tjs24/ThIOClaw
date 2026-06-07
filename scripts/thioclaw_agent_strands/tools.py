@@ -17,6 +17,7 @@ from typing import Optional
 
 from strands import tool
 
+from observability.agent_events import AgentEventEmitter
 # Reuse the existing implementations — Tier 1 reading is identical regardless
 # of which framework drives Tier 2.
 from thioclaw_agent.tools import (
@@ -37,12 +38,21 @@ class VerdictCapture:
     verdict: Optional[dict] = field(default=None)
 
 
-def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> list:
+def build_tools(
+    tier1_path: str,
+    signals_path: str,
+    capture: VerdictCapture,
+    emitter: Optional[AgentEventEmitter] = None,
+) -> list:
     """Return a list of Strands @tool-decorated callables bound to this session.
 
     The path args and capture object are closed over so the model sees clean,
     no-argument or signal-arg-only tools rather than tools that demand state
     paths the LLM cannot infer.
+
+    If `emitter` is provided, HITL prompts and analyst decisions inside
+    propose_query_execution are logged as structured events so the audit
+    trail records *who decided what* on every state-changing call.
     """
 
     @tool
@@ -101,6 +111,12 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
             target_sql_file: The signature file to update if approved
                 (e.g. queries/CVE-2026-31431/q6.sql).
         """
+        args = {
+            "query_sql": query_sql, "rationale": rationale,
+            "performance_impact": performance_impact, "target_sql_file": target_sql_file,
+        }
+        if emitter:
+            emitter.hitl_prompt(tool="propose_query_execution", args=args)
         print("\n[ThIOClaw Agent / Strands] Proposing Query Execution:")
         print(f"Rationale: {rationale}")
         print(f"Performance Impact: {performance_impact}")
@@ -108,8 +124,12 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
 
         approval = input("Approve execution? (y/N): ")
         if not approval.lower().startswith("y"):
+            if emitter:
+                emitter.hitl_decision("propose_query_execution", "rejected", "query_execution")
             return "Execution rejected by analyst."
 
+        if emitter:
+            emitter.hitl_decision("propose_query_execution", "approved", "query_execution")
         print("\n... executing ...")
         # MOCK execution — same stub as the litellm-direct variant.
         # Real backend wiring lives behind the contract's hitl_workflow seam.
@@ -120,9 +140,13 @@ def build_tools(tier1_path: str, signals_path: str, capture: VerdictCapture) -> 
             f"[ThIOClaw Agent / Strands] Approve updating {target_sql_file}? (y/N): "
         )
         if update_approval.lower().startswith("y"):
+            if emitter:
+                emitter.hitl_decision("propose_query_execution", "approved", "signature_update")
             result += f" Target file {target_sql_file} updated."
             print(f"-> Updated {target_sql_file}")
         else:
+            if emitter:
+                emitter.hitl_decision("propose_query_execution", "rejected", "signature_update")
             result += " Target file update rejected by analyst."
         return result
 

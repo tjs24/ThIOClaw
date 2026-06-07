@@ -34,11 +34,14 @@ except ImportError:
 from strands import Agent
 from strands.models.litellm import LiteLLMModel
 
+from observability.agent_events import AgentEventEmitter, AgentSession
+from observability.guardrails import GuardrailPolicy
 from thioclaw_agent.providers import (
     resolve_provider,
     check_required_env,
     completion_kwargs,
 )
+from thioclaw_agent_strands.hooks import GuardrailHooks, ObservabilityHooks
 from thioclaw_agent_strands.prompts import SYSTEM_PROMPT
 from thioclaw_agent_strands.tools import build_tools, VerdictCapture
 
@@ -96,12 +99,27 @@ class ThIOClawStrandsAgent:
             )
 
             capture = VerdictCapture()
-            tools = build_tools(tier1_path, signals_path, capture)
+            # Emitter is constructed below; build_tools needs it for HITL
+            # event logging, so we wire emitter first, then tools.
+            session = AgentSession(
+                cve_id=cve_id,
+                workload_id=workload_id,
+                framework="strands",
+                provider=resolution.provider,
+                model=resolution.model,
+            )
+            emitter = AgentEventEmitter(session)
+            policy = GuardrailPolicy()
+            tools = build_tools(tier1_path, signals_path, capture, emitter=emitter)
 
             agent = Agent(
                 model=model,
                 tools=tools,
                 system_prompt=SYSTEM_PROMPT,
+                hooks=[
+                    ObservabilityHooks(emitter),
+                    GuardrailHooks(policy, emitter),
+                ],
             )
 
             # Single user turn kicks off the loop; the agent will tool-call
