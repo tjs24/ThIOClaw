@@ -3,10 +3,16 @@ inventory:
   refresh_interval_seconds: 60
 
 telemetry:
-  local_json_path: ./data/sample_events.json
+  # Event collector format. Two orthogonal axes:
+  #   - default_source (below) selects WHERE events are read from (local file vs S3)
+  #   - event_source (here)   selects WHAT format the event stream is in
+  # See runbooks/CVE-2026-31431_sigma_validation.md for the auditd path.
+  event_source: osquery          # osquery | auditd | both
+  local_json_path: ./data/sample_events.json    # osquery-shaped normalized events
+  local_auditd_path: ./data/sample_auditd.log   # raw audit.log (consumed when event_source includes 'auditd')
   s3_manifest_path: ./data/s3_manifest.json
   lookback_hours: 24
-  default_source: local          # overridden by --raw-telemetry flag
+  default_source: local          # local | s3 (data location) — overridden by --raw-telemetry flag
 
 aws:
   profile_name: default          # Named AWS profile from ~/.aws/credentials

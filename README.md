@@ -126,10 +126,24 @@ This is the **Human-In-The-Loop (HITL)** gate — the agent articulates *why* it
 
 ## Telemetry Sources
 
+Two orthogonal axes determine where telemetry comes from and how it's shaped:
+
+**1. Data location** (`--raw-telemetry`) — where the harness reads events from:
+
 | Flag | Source | Credentials |
 |---|---|---|
 | `--raw-telemetry local` | `data/events.json` | None |
 | `--raw-telemetry s3` | S3 bucket via `data/s3_manifest.json` | `~/.aws/credentials` named profile |
+
+**2. Collector format** (`telemetry.event_source` in `harness.yaml`) — what event-stream format the harness ingests:
+
+| Value | Collector | Notes |
+|---|---|---|
+| `osquery` (default) | osquery `process_events`, `socket_events`, `kernel_module_events`, `file_events`, etc. | Bundled sample data (`data/sample_events.json`) ships in this format. All six Q1-Q6 reference queries target it. |
+| `auditd` | Linux kernel auditd via `auditctl` rules + `ausearch`/`auparse` | Mirror coverage via SigmaHQ rules at [`rules-emerging-threats/2026/Exploits/CVE-2026-31431/`](https://github.com/SigmaHQ/sigma/pull/6052). Validation runbook: [`runbooks/CVE-2026-31431_sigma_validation.md`](runbooks/CVE-2026-31431_sigma_validation.md). |
+| `both` | Union of the two | For environments running both collectors. The data plane is source-agnostic — it scores whatever DataFrame is fed in. |
+
+Per-signal source support is declared in `signals/<CVE-ID>.yaml` via `supported_sources:` on each rule.
 
 ### S3 Setup
 
@@ -192,7 +206,7 @@ ThIOClaw/
 
 ```mermaid
 graph TD
-    A["Inventory Telemetry (e.g. OSQuery/EDR)"] -->|Ingester| B["inventory.db (SQLite)"]
+    A["Inventory Telemetry (e.g. auditd/EDR)"] -->|Ingester| B["inventory.db (SQLite)"]
     C["Event Telemetry (Local/S3/API)"] -->|Data Plane| D["data_plane/<cve_id>.py"]
     B -->|vulnerable workloads| D
     D -->|"Deterministic queries (e.g. pandas)"| E["Tier 1: Deterministic Signal Scoring"]
@@ -228,6 +242,8 @@ ThIOClaw ships with a complete investigation for **CVE-2026-31431** (Linux kerne
 | Q6 | Exploit staging in `/tmp`, `/dev/shm`, memfd | 0.6 | Suspicious |
 
 **Verdict logic:** `exploited` if any exploited-tier signal fires AND total weight ≥ 1.0. `suspicious` if total ≥ 0.5. `benign` if total = 0. `inconclusive` otherwise.
+
+**Auditd-shaped coverage** — the same exploit chain is also covered by three SigmaHQ rules contributed in [SigmaHQ/sigma#6052](https://github.com/SigmaHQ/sigma/pull/6052) (AF_ALG socket creation, `algif_aead` module load, splice on setuid path). Reproduce and validate against live audit telemetry with [`runbooks/CVE-2026-31431_sigma_validation.md`](runbooks/CVE-2026-31431_sigma_validation.md).
 
 ---
 

@@ -74,6 +74,13 @@ ThIOClaw separates concerns into a **Control Plane** (LLM agent reasoning) and a
 ### Tier 1: Deterministic Signal Scoring
 The Data Plane runs deterministic queries against raw telemetry and scores them using weighted rules defined in `signals/<CVE-ID>.yaml`. This produces a **deterministic** verdict that is reproducible and auditable. No LLM is involved.
 
+### Telemetry Source Independence
+The Data Plane is **source-agnostic** at the scoring layer — it consumes normalized pandas DataFrames regardless of where the events came from. Two collector formats are first-class today:
+- **osquery** (default) — `process_events`, `socket_events`, `kernel_module_events`, `file_events` tables, normalized into `data/sample_events.json`-shaped JSON.
+- **auditd** — Linux kernel audit subsystem via `auditctl` rules + `ausearch`/`auparse`. Mirror Sigma rules ship in [SigmaHQ/sigma#6052](https://github.com/SigmaHQ/sigma/pull/6052); end-to-end replication runbook at `runbooks/CVE-2026-31431_sigma_validation.md`.
+
+Selected via `telemetry.event_source: osquery | auditd | both` in `harness.yaml`. Per-signal source support is declared on each rule in `signals/<CVE-ID>.yaml` via `supported_sources:`. An auditd ingester that normalizes raw `audit.log` into the same DataFrame schema is on the roadmap (not yet implemented) — until then, `event_source: auditd` is a documentation contract, not a runtime path.
+
 ### Tier 2: LLM Agentic Reasoning
 The Control Plane (ThIOClaw agent) receives the Tier 1 results and uses an LLM (via Ollama) to perform deeper reasoning. It can request additional evidence, correlate signals against the theoretical exploit chain, and propose new queries — but it must go through the analyst for approval.
 
