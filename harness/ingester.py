@@ -79,13 +79,13 @@ class InventoryIngester:
         Ingest CSV → SQLite if the file has changed since last ingest.
         Returns number of rows inserted/replaced.
         """
+        if not Path(self.csv_path).exists():
+            logger.warning("Inventory CSV not found: %s", self.csv_path)
+            return 0
+
         current_mtime = _file_mtime(self.csv_path)
         if not force and current_mtime <= self._last_mtime:
             logger.debug("inventory.csv unchanged, skipping ingest")
-            return 0
-
-        if not Path(self.csv_path).exists():
-            logger.warning("Inventory CSV not found: %s", self.csv_path)
             return 0
 
         self._init_schema()
