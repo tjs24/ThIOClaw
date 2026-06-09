@@ -4,8 +4,8 @@ import uuid
 import pathlib
 import datetime
 import pandas as pd
-import yaml
-import markdown
+
+from harness.report_writer import write_tier1, write_final_report
 
 def run_investigation(
     cve_id: str,
@@ -115,16 +115,15 @@ def run_investigation(
     elif total_weight == 0.0: tier1_verdict = "benign"
     else: tier1_verdict = "inconclusive"
 
-    tier1_results = {
-        "run_id": run_id,
-        "cve_id": cve_id,
-        "tier1_verdict": tier1_verdict,
-        "total_weight": total_weight,
-        "signals_fired": signals_fired,
-        "signals": signals
-    }
-    tier1_path = output_path / f"{run_id}_tier1.json"
-    tier1_path.write_text(json.dumps(tier1_results, indent=2))
+    tier1_path = write_tier1(
+        run_id=run_id,
+        cve_id=cve_id,
+        tier1_verdict=tier1_verdict,
+        total_weight=total_weight,
+        signals_fired=signals_fired,
+        signals=signals,
+        findings_dir=output_path,
+    )
 
     # Invoke ThIOClaw Tier 2 agent
     tier2_finding = {}
@@ -144,42 +143,23 @@ def run_investigation(
                 tier2_finding = json.loads(res.stdout)
         except json.JSONDecodeError: pass
 
-    # Reports
-    signals_bullet_list = "\n".join([f"- **{k}** (Weight: {signals[k]['weight']}, Tier: {signals[k]['tier']})" for k in signals_fired]) if signals_fired else "- None"
-    md_content = f"""# {cve_id} Investigation Report
-**Verdict:** {tier1_verdict}
-
-**Total Weight:** {total_weight}
-
-## Deterministic Signals Fired
-{signals_bullet_list}
-
-## ThIOClaw Agent Reasoning
-{tier2_finding.get('reasoning_trace', 'N/A')}
-
-## Recommended Action
-> {tier2_finding.get('recommended_action', 'N/A')}
-"""
-    docs_dir = pathlib.Path("docs")
-    docs_dir.mkdir(parents=True, exist_ok=True)
-    md_path = docs_dir / f"{cve_id}_{run_id[:8]}.md"
-    md_path.write_text(md_content)
-    
-    html_content = markdown.markdown(md_content)
-    html_path = docs_dir / f"{cve_id}_{run_id[:8]}.html"
-    html_path.write_text(f"<html><body>{html_content}</body></html>")
-
-    finding = {
-        "run_id": run_id, "cve_id": cve_id, "tier1_verdict": tier1_verdict, "tier2": tier2_finding
-    }
-    yaml_path = output_path / f"{run_id}_finding.yaml"
-    yaml_path.write_text(yaml.dump(finding))
+    paths = write_final_report(
+        run_id=run_id,
+        cve_id=cve_id,
+        tier1_verdict=tier1_verdict,
+        total_weight=total_weight,
+        signals_fired=signals_fired,
+        signals=signals,
+        tier2_finding=tier2_finding,
+        findings_dir=output_path,
+        docs_dir=pathlib.Path("docs"),
+    )
 
     return {
         "run_id": run_id,
         "status": "success",
         "elapsed_ms": 0,
-        "finding_yaml": str(yaml_path),
-        "finding_md": str(md_path),
-        "finding_html": str(html_path)
+        "finding_yaml": str(paths.finding_yaml),
+        "finding_md": str(paths.report_md),
+        "finding_html": str(paths.report_html),
     }

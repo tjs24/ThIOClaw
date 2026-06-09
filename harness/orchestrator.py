@@ -24,6 +24,7 @@ from typing import Optional
 
 from harness.config import HarnessConfig, CVETarget, load_config, resolve_telemetry_source
 from harness.ingester import InventoryIngester
+from harness.scoping import determine_affected_workloads
 from observability.logger import get_structured_logger
 from observability.metrics import HarnessMetrics
 
@@ -60,8 +61,12 @@ def investigate_target(
         raw_telemetry=raw_telemetry,
     )
 
-    # 1. Query inventory for vulnerable workloads
-    workloads_df = ingester.get_vulnerable_workloads(target.trigger_assessments)
+    # 1. Resolve workloads in scope for this investigation
+    workloads_df = determine_affected_workloads(
+        ingester=ingester,
+        trigger_assessments=target.trigger_assessments,
+        skip_assessments=target.skip_assessments,
+    )
     n_workloads = len(workloads_df)
     logger.info("Found %d workload(s) to investigate for %s", n_workloads, target.cve_id)
     metrics.record_workloads_matched(target.cve_id, n_workloads)
