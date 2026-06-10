@@ -17,9 +17,11 @@ import yaml
 @dataclass
 class TelemetryConfig:
     local_json_path: str = "./data/events.json"
+    local_auditd_path: str = "./data/sample_auditd.log"
     s3_manifest_path: str = "./data/s3_manifest.json"
     lookback_hours: int = 24
     default_source: str = "local"  # "local" | "s3"
+    event_source: str = "osquery"  # "osquery" | "auditd" | "both"
 
 
 @dataclass
