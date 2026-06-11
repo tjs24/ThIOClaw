@@ -2,14 +2,33 @@ import json
 import yaml
 
 def get_tier1_summary(tier1_path: str) -> str:
-    """Reads the Tier 1 summary data to see which signals fired."""
+    """Reads the Tier 1 summary: verdict, signals fired, and — critically —
+    telemetry source coverage so the agent knows what it could NOT see."""
     try:
         with open(tier1_path) as f:
             data = json.load(f)
+        coverage = data.get("source_coverage", {})
+        # Surface exploited-tier signals no loaded source could see: these are
+        # blind spots, not clean negatives.
+        visible = set()
+        for sigs in coverage.get("visible_signals", {}).values():
+            visible.update(sigs)
+        blind_exploited = [
+            s["id"] for s in data.get("signals", [])
+            if s.get("tier") == "exploited" and not s.get("fired")
+            and s["id"] not in visible
+        ]
         summary = {
             "cve_id": data.get("cve_id"),
-            "total_weight": data.get("total_weight"),
-            "signals_fired": data.get("signals_fired")
+            "verdict": data.get("verdict"),
+            "score": data.get("score"),
+            "signals_fired": data.get("signals_fired"),
+            "source_coverage": {
+                "loaded": coverage.get("loaded"),
+                "failed": coverage.get("failed"),
+            },
+            "blind_exploited_signals": blind_exploited,
+            "response_plan": [a.get("id") for a in data.get("response_plan", [])],
         }
         return json.dumps(summary, indent=2)
     except Exception as e:
@@ -25,18 +44,21 @@ def get_cve_theoretical_path(signals_path: str) -> str:
         return f"Error reading signals yaml: {e}"
 
 def get_exploit_evidence(tier1_path: str, signal_name: str) -> str:
-    """Fetches the raw telemetry rows for deeper inspection of a specific signal."""
+    """Fetches the raw telemetry rows that fired a specific signal, plus which
+    source detected it. Reads SignalHit.evidence_rows from the Finding."""
     try:
         with open(tier1_path) as f:
             data = json.load(f)
-        signals_map = data.get("signals", {})
-        if signal_name in signals_map:
-            q_name = signals_map[signal_name].get("q")
-            if q_name:
-                rows_key = f"{q_name.lower()}_rows"
-                rows = data.get(rows_key, [])
-                return json.dumps(rows[:5], indent=2) # return top 5 rows for context limit
-        return f"No specific evidence found for {signal_name}."
+        for sig in data.get("signals", []):   # signals is a list of SignalHit dicts
+            if sig.get("id") == signal_name:
+                return json.dumps({
+                    "signal": signal_name,
+                    "fired": sig.get("fired"),
+                    "detected_by": sig.get("detected_by"),
+                    "blind_sources": sig.get("blind_sources"),
+                    "evidence_rows": sig.get("evidence_rows", [])[:5],
+                }, indent=2)
+        return f"No signal named {signal_name} in the Tier 1 finding."
     except Exception as e:
         return f"Error reading evidence: {e}"
 

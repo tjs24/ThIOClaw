@@ -94,6 +94,8 @@ def investigate_target(
         lookback_hours=cfg.telemetry.lookback_hours,
         thioclaw_bin=cfg.agent.thioclaw_bin,
         signals_file=target.signals_file,
+        event_source=cfg.telemetry.event_source,
+        local_auditd_path=cfg.telemetry.local_auditd_path,
     )
 
     status = result.get("status", "error")
