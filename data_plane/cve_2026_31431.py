@@ -143,12 +143,13 @@ def run_investigation(
     run_id: str = "",
     event_source: str = "osquery",
     local_auditd_path: str = "",
+    lookback_anchor: str = "latest_event",
     extra_params: dict = None,
 ) -> dict:
     run_id = run_id or str(uuid.uuid4())
     output_path = pathlib.Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    cutoff_ts = (datetime.datetime.utcnow() - datetime.timedelta(hours=lookback_hours)).timestamp()
+    now_ts = datetime.datetime.utcnow().timestamp()
 
     configured = _CONFIGURED_SOURCES.get(event_source, ["osquery"])
     source_paths = {"osquery": local_events_path, "auditd": local_auditd_path}
@@ -162,7 +163,8 @@ def run_investigation(
                 workload_id_default=(workload_id if workload_id != "ALL" else "ALL")
             )
             results.append(adapter.ingest(
-                source_paths.get(name, ""), workload_id=workload_id, cutoff_ts=cutoff_ts,
+                source_paths.get(name, ""), workload_id=workload_id,
+                lookback_hours=lookback_hours, anchor=lookback_anchor, now_ts=now_ts,
             ))
         try:
             inventory_df = pd.read_csv(local_inventory_path, dtype=str)

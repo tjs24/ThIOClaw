@@ -96,6 +96,7 @@ def investigate_target(
         signals_file=target.signals_file,
         event_source=cfg.telemetry.event_source,
         local_auditd_path=cfg.telemetry.local_auditd_path,
+        lookback_anchor=cfg.telemetry.lookback_anchor,
     )
 
     status = result.get("status", "error")

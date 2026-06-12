@@ -20,6 +20,7 @@ class TelemetryConfig:
     local_auditd_path: str = "./data/sample_auditd.log"
     s3_manifest_path: str = "./data/s3_manifest.json"
     lookback_hours: int = 24
+    lookback_anchor: str = "latest_event"  # "latest_event" (anchor window to data) | "now" (wall-clock)
     default_source: str = "local"  # "local" | "s3"
     event_source: str = "osquery"  # "osquery" | "auditd" | "both"
 

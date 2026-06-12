@@ -8,6 +8,7 @@ import pandas as pd
 
 from telemetry import schema
 from telemetry.sources import OsquerySource, AuditdSource, SOURCE_REGISTRY
+from telemetry.sources.base import scope_frame, ANCHOR_LATEST_EVENT, ANCHOR_NOW
 
 OSQUERY_PATH = "data/sample_events.json"
 AUDITD_PATH = "data/sample_auditd.log"
@@ -82,6 +83,37 @@ def test_auditd_cannot_see_uid_escalation_q3():
     df = AuditdSource(workload_id_default=WL).ingest(AUDITD_PATH).frame
     q3 = df[(df["socket_family"] == 38) & (df["uid"] != 0) & (df["euid"] == 0)]
     assert q3.empty
+
+
+# --- lookback anchoring ---------------------------------------------------
+def _frame(*ts):
+    return pd.DataFrame([{"workload_id": "wl", "ts": t, "event_type": "socket"} for t in ts])
+
+
+def test_latest_event_anchor_keeps_stale_snapshot():
+    """The fix: a snapshot whose events all predate 'now' must NOT be emptied.
+    Window is anchored to the data's own latest event."""
+    df = _frame(1_000_000, 1_003_600, 1_007_200)   # ~2h span, all 'old'
+    out = scope_frame(df, "ALL", lookback_hours=24, anchor=ANCHOR_LATEST_EVENT)
+    assert len(out) == 3
+
+
+def test_latest_event_anchor_drops_events_outside_window():
+    df = _frame(1_000_000, 1_007_200, 2_000_000)   # third event >24h after max
+    out = scope_frame(df, "ALL", lookback_hours=24, anchor=ANCHOR_LATEST_EVENT)
+    assert set(out["ts"]) == {2_000_000}           # only within 24h of max(ts)
+
+
+def test_now_anchor_empties_a_stale_snapshot():
+    """Live mode: with a 'now' far past the data, the stale snapshot is a gap."""
+    df = _frame(1_000_000, 1_007_200)
+    out = scope_frame(df, "ALL", lookback_hours=24, anchor=ANCHOR_NOW, now_ts=9_000_000_000)
+    assert out.empty
+
+
+def test_no_lookback_means_no_time_filter():
+    df = _frame(1, 2, 3)
+    assert len(scope_frame(df, "ALL", lookback_hours=None)) == 3
 
 
 # --- degrade-and-flag (decision 2.b) --------------------------------------

@@ -8,16 +8,16 @@
 # without auparse, so UID_ESCALATION_AFTER_AFALG is osquery-only and stays
 # "blind" for an auditd-only run.
 ----
-type=SYSCALL msg=audit(1748448000:380): arch=c000003e syscall=59 success=yes exit=0 ppid=1 pid=8801 auid=0 uid=0 gid=0 euid=0 comm="modprobe" exe="/usr/bin/kmod" key="execve_all"
-type=EXECVE msg=audit(1748448000:380): argc=2 a0="modprobe" a1="algif_aead"
+type=SYSCALL msg=audit(1781092800:380): arch=c000003e syscall=59 success=yes exit=0 ppid=1 pid=8801 auid=0 uid=0 gid=0 euid=0 comm="modprobe" exe="/usr/bin/kmod" key="execve_all"
+type=EXECVE msg=audit(1781092800:380): argc=2 a0="modprobe" a1="algif_aead"
 ----
-type=SYSCALL msg=audit(1748448120:401): arch=c000003e syscall=41 success=yes exit=3 a0=0x26 a1=5 a2=0 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/usr/bin/python3.11" key="af_alg"
-type=SOCKADDR msg=audit(1748448120:401): saddr=26000000
+type=SYSCALL msg=audit(1781092920:401): arch=c000003e syscall=41 success=yes exit=3 a0=0x26 a1=5 a2=0 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/usr/bin/python3.11" key="af_alg"
+type=SOCKADDR msg=audit(1781092920:401): saddr=26000000
 ----
-type=SYSCALL msg=audit(1748448130:402): arch=c000003e syscall=59 success=yes exit=0 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/home/attacker/exploit_poc" key="execve_all"
+type=SYSCALL msg=audit(1781092930:402): arch=c000003e syscall=59 success=yes exit=0 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/home/attacker/exploit_poc" key="execve_all"
 ----
-type=SYSCALL msg=audit(1748448140:403): arch=c000003e syscall=59 success=yes exit=0 ppid=12345 pid=12400 auid=1001 uid=0 gid=0 euid=0 comm="bash" exe="/usr/bin/bash" key="execve_all"
+type=SYSCALL msg=audit(1781092940:403): arch=c000003e syscall=59 success=yes exit=0 ppid=12345 pid=12400 auid=1001 uid=0 gid=0 euid=0 comm="bash" exe="/usr/bin/bash" key="execve_all"
 ----
-type=SYSCALL msg=audit(1748448100:404): arch=c000003e syscall=257 success=yes exit=5 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/home/attacker/exploit_poc" key="su_read"
-type=PATH msg=audit(1748448100:404): item=0 name="/tmp/.x9a3b/exploit_poc" nametype=CREATE
+type=SYSCALL msg=audit(1781092900:404): arch=c000003e syscall=257 success=yes exit=5 ppid=12000 pid=12345 auid=1001 uid=1001 gid=1001 euid=1001 comm="exploit_poc" exe="/home/attacker/exploit_poc" key="su_read"
+type=PATH msg=audit(1781092900:404): item=0 name="/tmp/.x9a3b/exploit_poc" nametype=CREATE
 ----

@@ -35,18 +35,35 @@ class IngestResult:
         return self.report.ok
 
 
+ANCHOR_LATEST_EVENT = "latest_event"
+ANCHOR_NOW = "now"
+
+
 def scope_frame(
     df: pd.DataFrame,
     workload_id: str,
-    cutoff_ts: Optional[float],
+    lookback_hours: Optional[float] = None,
+    anchor: str = ANCHOR_LATEST_EVENT,
+    now_ts: Optional[float] = None,
 ) -> pd.DataFrame:
-    """Filter to one workload (unless 'ALL') and to events at/after cutoff_ts."""
+    """Filter to one workload (unless 'ALL') and to a lookback window.
+
+    The window is anchored either to the data itself (`latest_event`: cutoff =
+    max(ts) - lookback) or to wall-clock (`now`: cutoff = now_ts - lookback).
+    Data-anchoring keeps the harness from going blind on a replayed or batched
+    snapshot whose events predate "now"; now-anchoring is the live-collector
+    default a deployment would choose so a stalled collector surfaces as a gap.
+    """
     if df.empty:
         return df
     if workload_id and workload_id != "ALL" and "workload_id" in df.columns:
         df = df[df["workload_id"] == workload_id]
-    if cutoff_ts is not None and "ts" in df.columns:
-        df = df[pd.to_numeric(df["ts"], errors="coerce") >= cutoff_ts]
+    if lookback_hours is not None and "ts" in df.columns and not df.empty:
+        ts = pd.to_numeric(df["ts"], errors="coerce")
+        reference = now_ts if anchor == ANCHOR_NOW else ts.max()
+        if reference is not None and pd.notna(reference):
+            cutoff = reference - lookback_hours * 3600
+            df = df[ts >= cutoff]
     return df
 
 
@@ -73,7 +90,9 @@ class TelemetrySource:
         self,
         path: str,
         workload_id: str = "ALL",
-        cutoff_ts: Optional[float] = None,
+        lookback_hours: Optional[float] = None,
+        anchor: str = ANCHOR_LATEST_EVENT,
+        now_ts: Optional[float] = None,
     ) -> IngestResult:
         try:
             raw = self.load(path)
@@ -89,7 +108,7 @@ class TelemetrySource:
             return IngestResult(self.name, pd.DataFrame(),
                                 ValidationReport(False, self.name, reason="no events after normalize"))
 
-        df = scope_frame(df, workload_id, cutoff_ts)
+        df = scope_frame(df, workload_id, lookback_hours, anchor, now_ts)
         df = schema.coerce_numeric(df)
         report = schema.validate(df, self.name)
         return IngestResult(self.name, df, report)

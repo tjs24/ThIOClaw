@@ -12,6 +12,12 @@ telemetry:
   local_auditd_path: ./data/sample_auditd.log   # raw audit.log (consumed when event_source includes 'auditd')
   s3_manifest_path: ./data/s3_manifest.json
   lookback_hours: 24
+  # Where the lookback window is anchored:
+  #   latest_event — cutoff = max(event ts) - lookback. Survives replayed /
+  #                  batched snapshots whose events predate "now" (the default).
+  #   now          — cutoff = wall-clock now - lookback. Live-collector mode; a
+  #                  stalled collector correctly surfaces as an empty window.
+  lookback_anchor: latest_event  # latest_event | now
   default_source: local          # local | s3 (data location) — overridden by --raw-telemetry flag
 
 aws:
